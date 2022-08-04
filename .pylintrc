@@ -2,6 +2,7 @@
 disable=
     broad-except,
     consider-using-f-string,
+    invalid-name,
     line-too-long,
     too-many-branches,
     too-many-locals,
