@@ -36,12 +36,12 @@ import time
 
 __all__ = []
 __version__ = "1.0.0"  # See https://www.python.org/dev/peps/pep-0396/
-__date__ = '2019-07-16'
-__updated__ = '2022-05-18'
+__date__ = '2022-08-04'
+__updated__ = '2022-08-04'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
-SENZING_PRODUCT_ID = "5xxx"
+SENZING_PRODUCT_ID = "5030"
 LOG_FORMAT = '%(asctime)s %(message)s'
 
 # Working with bytes.
@@ -95,7 +95,7 @@ def get_parser():
     ''' Parse commandline arguments. '''
 
     subcommands = {
-        'task1': {
+        'all': {
             "help": 'Example task #1.',
             "argument_aspects": ["common"],
             "arguments": {
@@ -103,17 +103,6 @@ def get_parser():
                     "dest": "senzing_dir",
                     "metavar": "SENZING_DIR",
                     "help": "Location of Senzing. Default: /opt/senzing"
-                },
-            },
-        },
-        'task2': {
-            "help": 'Example task #2.',
-            "argument_aspects": ["common"],
-            "arguments": {
-                "--password": {
-                    "dest": "password",
-                    "metavar": "SENZING_PASSWORD",
-                    "help": "Example of information redacted in the log. Default: None"
                 },
             },
         },
@@ -501,25 +490,7 @@ def do_task1(subcommand, args):
     logging.info(exit_template(config))
 
 
-def do_task2(subcommand, args):
-    ''' Do a task. Print the complete config object'''
 
-    # Get context from CLI, environment variables, and ini files.
-
-    config = get_configuration(subcommand, args)
-
-    # Prolog.
-
-    logging.info(entry_template(config))
-
-    # Do work.
-
-    config_json = json.dumps(config, sort_keys=True, indent=4)
-    print(config_json)
-
-    # Epilog.
-
-    logging.info(exit_template(config))
 
 
 def do_sleep(subcommand, args):
