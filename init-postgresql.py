@@ -59,15 +59,35 @@ CONFIGURATION_LOCATOR = {
         "env": "SENZING_DEBUG",
         "cli": "debug"
     },
-    "password": {
+    "engine_configuration_json": {
         "default": None,
-        "env": "SENZING_PASSWORD",
-        "cli": "password"
+        "env": "SENZING_ENGINE_CONFIGURATION_JSON",
+        "cli": "engine-configuration-json"
     },
-    "senzing_dir": {
-        "default": "/opt/senzing",
-        "env": "SENZING_DIR",
-        "cli": "senzing-dir"
+    "database_url": {
+        "default": None,
+        "env": "SENZING_DATABASE_URL",
+        "cli": "database-url"
+    },
+    "log_level_parameter": {
+        "default": "info",
+        "env": "SENZING_LOG_LEVEL",
+        "cli": "log-level-parameter"
+    },
+    "senzing_data_dir": {
+        "default": "/opt/senzing/data",
+        "env": "SENZING_DATA_DIR",
+        "cli": "data-dir"
+    },
+    "senzing_etc_dir": {
+        "default": "/etc/opt/senzing",
+        "env": "SENZING_ETC_DIR",
+        "cli": "etc-dir"
+    },
+    "senzing_g2_dir": {
+        "default": "/opt/senzing/g2",
+        "env": "SENZING_G2_DIR",
+        "cli": "g2-dir"
     },
     "sleep_time_in_seconds": {
         "default": 0,
@@ -83,7 +103,7 @@ CONFIGURATION_LOCATOR = {
 # Enumerate keys in 'configuration_locator' that should not be printed to the log.
 
 KEYS_TO_REDACT = [
-    "password",
+    "database_url",
 ]
 
 # -----------------------------------------------------------------------------
@@ -96,7 +116,7 @@ def get_parser():
 
     subcommands = {
         'all': {
-            "help": 'Example task #1.',
+            "help": 'Perform all initialization tasks.',
             "argument_aspects": ["common"],
             "arguments": {
                 "--senzing-dir": {
@@ -128,6 +148,16 @@ def get_parser():
 
     argument_aspects = {
         "common": {
+            "--data-dir": {
+                "dest": "senzing_data_dir",
+                "metavar": "SENZING_DATA_DIR",
+                "help": "Path to Senzing data. Default: /opt/senzing/data"
+            },
+            "--database-url": {
+                "dest": "g2_database_url_generic",
+                "metavar": "SENZING_DATABASE_URL",
+                "help": "URL of PostgreSQL database. Default: none"
+            },
             "--debug": {
                 "dest": "debug",
                 "action": "store_true",
@@ -137,6 +167,16 @@ def get_parser():
                 "dest": "engine_configuration_json",
                 "metavar": "SENZING_ENGINE_CONFIGURATION_JSON",
                 "help": "Advanced Senzing engine configuration. Default: none"
+            },
+            "--etc-dir": {
+                "dest": "senzing_etc_dir",
+                "metavar": "SENZING_ETC_DIR",
+                "help": "Path to Senzing configuration. Default: /etc/opt/senzing"
+            },
+            "--g2-dir": {
+                "dest": "senzing_g2_dir",
+                "metavar": "SENZING_G2_DIR",
+                "help": "Path to Senzing binaries. Default: /opt/senzing/g2"
             },
         },
     }
@@ -470,7 +510,7 @@ def do_docker_acceptance_test(subcommand, args):
     logging.info(exit_template(config))
 
 
-def do_task1(subcommand, args):
+def do_all(subcommand, args):
     ''' Do a task. '''
 
     # Get context from CLI, environment variables, and ini files.

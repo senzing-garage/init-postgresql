@@ -6,7 +6,7 @@ GIT_VERSION := $(shell git describe --always --tags --long --dirty | sed -e 's/\
 # Docker variables
 
 DOCKER_IMAGE_TAG ?= $(GIT_REPOSITORY_NAME):$(GIT_VERSION)
-DOCKER_IMAGE_NAME := senzing/template-python
+DOCKER_IMAGE_NAME := senzing/init-postgresql
 
 # -----------------------------------------------------------------------------
 # The first "make" target runs as default.
