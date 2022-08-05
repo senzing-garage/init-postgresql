@@ -14,11 +14,15 @@ import linecache
 import logging
 import os
 import signal
+import string
 import sys
 import time
 import urllib.request
+from urllib.parse import urlparse, urlunparse
 
 # Import from https://pypi.org/
+
+import psycopg2
 
 # Metadata
 
@@ -37,6 +41,12 @@ LOG_FORMAT = '%(asctime)s %(message)s'
 KILOBYTES = 1024
 MEGABYTES = 1024 * KILOBYTES
 GIGABYTES = 1024 * MEGABYTES
+
+# Lists from https://www.ietf.org/rfc/rfc1738.txt
+
+SAFE_CHARACTER_LIST = ['$', '-', '_', '.', '+', '!', '*', '(', ')', ',', '"'] + list(string.ascii_letters)
+UNSAFE_CHARACTER_LIST = ['"', '<', '>', '#', '%', '{', '}', '|', '\\', '^', '~', '[', ']', '`']
+RESERVED_CHARACTER_LISt = [';', ',', '/', '?', ':', '@', '=', '&']
 
 # The "configuration_locator" describes where configuration variables are in:
 # 1) Command line options, 2) Environment variables, 3) Configuration files, 4) Default values
@@ -140,7 +150,7 @@ def get_parser():
                 "help": "Path to Senzing data. Default: /opt/senzing/data"
             },
             "--database-url": {
-                "dest": "g2_database_url_generic",
+                "dest": "database_url",
                 "metavar": "SENZING_DATABASE_URL",
                 "help": "URL of PostgreSQL database. Default: none"
             },
@@ -216,7 +226,7 @@ MESSAGE_DEBUG = 900
 MESSAGE_DICTIONARY = {
     "100": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}I",
     "292": "Configuration change detected.  Old: {0} New: {1}",
-    "293": "For information on warnings and errors, see https://github.com/Senzing/stream-loader#errors",
+    "293": "For information on warnings and errors, see https://github.com/Senzing/init-postgresql#errors",
     "294": "Version: {0}  Updated: {1}",
     "295": "Sleeping infinitely.",
     "296": "Sleeping {0} seconds.",
@@ -232,6 +242,7 @@ MESSAGE_DICTIONARY = {
     "698": "Program terminated with error.",
     "699": "{0}",
     "700": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
+    "701": "Missing required parameter: {0}",
     "885": "License has expired.",
     "886": "G2Engine.addRecord() bad return code: {0}; JSON: {1}",
     "888": "G2Engine.addRecord() G2ModuleNotInitialized: {0}; JSON: {1}",
@@ -373,8 +384,8 @@ def get_configuration(subcommand, args):
 
     # Normalize SENZING_INPUT_URL
 
-    # if result.get('senzing_input_sql_url', "").startswith("file://"):
-    #     result['senzing_input_sql_url'] = result.get('senzing_input_sql_url')[7:]
+    if result.get('input_sql_url', "").startswith("/"):
+        result['input_sql_url'] = "file://{0}".format(result.get('input_sql_url'))
 
     return result
 
@@ -389,10 +400,13 @@ def validate_configuration(config):
 
     subcommand = config.get('subcommand')
 
-    if subcommand in ['task1', 'task2']:
+    if subcommand in ['all', 'task2']:
 
-        if not config.get('senzing_dir'):
-            user_error_messages.append(message_error(414))
+        if not config.get('input_sql_url'):
+            user_error_messages.append(message_error(701, 'SENZING_INPUT_SQL_URL'))
+
+        if not config.get('database_url'):
+            user_error_messages.append(message_error(701, 'SENZING_DATABASE_URL'))
 
     # Log warning messages.
 
@@ -487,18 +501,150 @@ def exit_silently():
     sys.exit(0)
 
 # -----------------------------------------------------------------------------
-# tasks
-#   Common function signature: do_XXX(args)
+# Database URL parsing
 # -----------------------------------------------------------------------------
+
+
+def translate(mapping, astring):
+    new_string = str(astring)
+    for key, value in mapping.items():
+        new_string = new_string.replace(key, value)
+    return new_string
+
+
+def get_unsafe_characters(astring):
+    result = []
+    for unsafe_character in UNSAFE_CHARACTER_LIST:
+        if unsafe_character in astring:
+            result.append(unsafe_character)
+    return result
+
+
+def get_safe_characters(astring):
+    result = []
+    for safe_character in SAFE_CHARACTER_LIST:
+        if safe_character not in astring:
+            result.append(safe_character)
+    return result
+
+
+def parse_database_url(original_senzing_database_url):
+    ''' Given a canonical database URL, decompose into URL components. '''
+
+    result = {}
+
+    # Get the value of SENZING_DATABASE_URL environment variable.
+
+    senzing_database_url = original_senzing_database_url
+
+    # Create lists of safe and unsafe characters.
+
+    unsafe_characters = get_unsafe_characters(senzing_database_url)
+    safe_characters = get_safe_characters(senzing_database_url)
+
+    # Detect an error condition where there are not enough safe characters.
+
+    if len(unsafe_characters) > len(safe_characters):
+        logging.error(message_error(730, unsafe_characters, safe_characters))
+        return result
+
+    # Perform translation.
+    # This makes a map of safe character mapping to unsafe characters.
+    # "senzing_database_url" is modified to have only safe characters.
+
+    translation_map = {}
+    safe_characters_index = 0
+    for unsafe_character in unsafe_characters:
+        safe_character = safe_characters[safe_characters_index]
+        safe_characters_index += 1
+        translation_map[safe_character] = unsafe_character
+        senzing_database_url = senzing_database_url.replace(unsafe_character, safe_character)
+
+    # Parse "translated" URL.
+
+    parsed = urlparse(senzing_database_url)
+    schema = parsed.path.strip('/')
+
+    # Construct result.
+
+    result = {
+        'scheme': translate(translation_map, parsed.scheme),
+        'netloc': translate(translation_map, parsed.netloc),
+        'path': translate(translation_map, parsed.path),
+        'params': translate(translation_map, parsed.params),
+        'query': translate(translation_map, parsed.query),
+        'fragment': translate(translation_map, parsed.fragment),
+        'username': translate(translation_map, parsed.username),
+        'password': translate(translation_map, parsed.password),
+        'hostname': translate(translation_map, parsed.hostname),
+        'port': translate(translation_map, parsed.port),
+        'schema': translate(translation_map, schema),
+    }
+
+    # For safety, compare original URL with reconstructed URL.
+
+    url_parts = [
+        result.get('scheme'),
+        result.get('netloc'),
+        result.get('path'),
+        result.get('params'),
+        result.get('query'),
+        result.get('fragment'),
+    ]
+    test_senzing_database_url = urlunparse(url_parts)
+    if test_senzing_database_url != original_senzing_database_url:
+        logging.warning(message_warning(568, original_senzing_database_url, test_senzing_database_url))
+
+    # Return result.
+
+    return result
+
+# -----------------------------------------------------------------------------
+# Utility functions
+# -----------------------------------------------------------------------------
+
+
+def get_db_params(config):
+    database_url = config.get('database_url')
+    parsed_database_url = parse_database_url(database_url)
+    dbname = parsed_database_url.get('path')[1:]
+
+    result = {
+        'dbname': dbname,
+        'user': parsed_database_url.get('username', ""),
+        'password':parsed_database_url.get('password', ""),
+        'host':parsed_database_url.get('hostname', ""),
+        "port":parsed_database_url.get('port', ""),
+    }
+    return result
+
+# -----------------------------------------------------------------------------
+# tasks
+#   Common function signature: task_XXX(config)
+# -----------------------------------------------------------------------------
+
 
 def task_process_sql_file(config):
 
     input_url = config.get('input_sql_url')
     if input_url:
         with urllib.request.urlopen(input_url) as input_file:
-            for line in input_file:
-                line_string = line.decode('utf-8')
-                print(line_string)
+            db_connection = None
+            try:
+                db_params = get_db_params(config)
+                db_connection = psycopg2.connect(**db_params)
+                db_cursor = db_connection.cursor()
+                for line in input_file:
+                    line_string = line.decode('utf-8').strip()
+                    if line_string:
+                        db_cursor.execute(line_string)
+                db_cursor.close()
+                db_connection.commit()
+            except (Exception, psycopg2.DatabaseError) as error:
+                logging.error(message_error(999, error))
+            finally:
+                if db_connection is not None:
+                    db_connection.close()
 
 # -----------------------------------------------------------------------------
 # do_* functions
@@ -528,6 +674,7 @@ def do_all(subcommand, args):
     # Get context from CLI, environment variables, and ini files.
 
     config = get_configuration(subcommand, args)
+    validate_configuration(config)
 
     # Prolog.
 
