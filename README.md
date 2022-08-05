@@ -317,6 +317,22 @@ Unset `*_PARAMETER` environment variables have no effect on the
 
 ## Demonstrate using docker-compose
 
+### Clone repository
+
+For more information on environment variables,
+see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md).
+
+1. Set these environment variable values:
+
+    ```console
+    export GIT_ACCOUNT=senzing
+    export GIT_REPOSITORY=init-postgres
+    export GIT_ACCOUNT_DIR=~/${GIT_ACCOUNT}.git
+    export GIT_REPOSITORY_DIR="${GIT_ACCOUNT_DIR}/${GIT_REPOSITORY}"
+    ```
+
+1. Using the environment variables values just set, follow steps in [clone-repository](https://github.com/Senzing/knowledge-base/blob/main/HOWTO/clone-repository.md) to install the Git repository.
+
 ### Volumes
 
 1. :pencil2: Specify the directory where Senzing should be installed on the local host.
@@ -348,6 +364,14 @@ Unset `*_PARAMETER` environment variables have no effect on the
 
     ```console
     mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR}
+    ```
+
+1. Launch docker-compose formation.
+   Example:
+
+    ```console
+    cd ${GIT_REPOSITORY_DIR}
+    sudo --preserve-env docker-compose up
     ```
 
 ## Develop
