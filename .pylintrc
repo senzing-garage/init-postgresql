@@ -2,7 +2,9 @@
 disable=
     broad-except,
     consider-using-f-string,
+    import-error,
     line-too-long,
+    missing-function-docstring,
     too-many-branches,
     too-many-locals,
 good-names=

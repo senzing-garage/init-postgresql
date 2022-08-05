@@ -652,11 +652,15 @@ def process_sql_file(input_url, db_parameters):
 def task_process_sql_file(config):
 
     input_url = config.get('input_sql_url')
-
     db_parameters_list = []
+
+    # If set, include CLI/Environment single database URL.
+
     database_url = config.get('database_url')
     if database_url:
         db_parameters_list.append(database_url)
+
+    # If set, include database URLs listed in SENZING_ENGINE_CONFIGURATION_JSON.
 
     engine_configuration_json = config.get('engine_configuration_json')
     if engine_configuration_json:
@@ -664,7 +668,6 @@ def task_process_sql_file(config):
 
         db_url_raw = engine_configuration.get('SQL', {}).get('CONNECTION')
         if db_url_raw:
-            reverse_replace(db_url_raw, ":", "/", 1)
             db_parameters_list.append(reverse_replace(db_url_raw, ":", "/", 1))
 
         cluster_key = engine_configuration.get('SQL', {}).get('BACKEND')
@@ -679,8 +682,9 @@ def task_process_sql_file(config):
                 cluster_db_raw = engine_configuration.get(cluster_value, {}).get("DB_1")
                 db_parameters_list.append(reverse_replace(cluster_db_raw, ":", "/", 1))
 
-    db_parameters_set = set(db_parameters_list)
+    # Run the input SQL file against all databases.
 
+    db_parameters_set = set(db_parameters_list)
     for db_parameters in db_parameters_set:
         process_sql_file(input_url, get_db_parameters(db_parameters))
 
