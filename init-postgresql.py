@@ -604,8 +604,12 @@ def parse_database_url(original_senzing_database_url):
 # -----------------------------------------------------------------------------
 
 
-def get_db_params(config):
-    database_url = config.get('database_url')
+def reverse_replace(a_string, old_value, new_value, occurrence):
+    split_list = a_string.rsplit(old_value, occurrence)
+    return new_value.join(split_list)
+
+
+def get_db_parameters(database_url):
     parsed_database_url = parse_database_url(database_url)
     dbname = parsed_database_url.get('path')[1:]
 
@@ -618,24 +622,17 @@ def get_db_params(config):
     }
     return result
 
-# -----------------------------------------------------------------------------
-# tasks
-#   Common function signature: task_XXX(config)
-# -----------------------------------------------------------------------------
 
-
-def task_process_sql_file(config):
+def process_sql_file(input_url, db_parameters):
 
     db_connection = None
-    input_url = config.get('input_sql_url')
     if input_url:
         with urllib.request.urlopen(input_url) as input_file:
-            db_params = get_db_params(config)
             for line in input_file:
                 line_string = line.decode('utf-8').strip()
                 if line_string:
                     try:
-                        db_connection = psycopg2.connect(**db_params)
+                        db_connection = psycopg2.connect(**db_parameters)
                         db_cursor = db_connection.cursor()
                         db_cursor.execute(line_string)
                         db_cursor.close()
@@ -645,6 +642,48 @@ def task_process_sql_file(config):
                         logging.error(message_error(999, err_message))
     if db_connection is not None:
         db_connection.close()
+
+# -----------------------------------------------------------------------------
+# tasks
+#   Common function signature: task_XXX(config)
+# -----------------------------------------------------------------------------
+
+
+def task_process_sql_file(config):
+
+    input_url = config.get('input_sql_url')
+
+    db_parameters_list = []
+    database_url = config.get('database_url')
+    if database_url:
+        db_parameters_list.append(database_url)
+
+    engine_configuration_json = config.get('engine_configuration_json')
+    if engine_configuration_json:
+        engine_configuration = json.loads(engine_configuration_json)
+
+        db_url_raw = engine_configuration.get('SQL', {}).get('CONNECTION')
+        if db_url_raw:
+            reverse_replace(db_url_raw, ":", "/", 1)
+            db_parameters_list.append(reverse_replace(db_url_raw, ":", "/", 1))
+
+        cluster_key = engine_configuration.get('SQL', {}).get('BACKEND')
+        if cluster_key:
+            cluster_values = []
+            cluster = engine_configuration.get(cluster_key)
+            for value in cluster.values():
+                cluster_values.append(value)
+            cluster_values_set = set(cluster_values)
+
+            for cluster_value in cluster_values_set:
+                cluster_db_raw = engine_configuration.get(cluster_value, {}).get("DB_1")
+                db_parameters_list.append(reverse_replace(cluster_db_raw, ":", "/", 1))
+
+    db_parameters_set = set(db_parameters_list)
+
+    for db_parameters in db_parameters_set:
+        process_sql_file(input_url, get_db_parameters(db_parameters))
+
 
 def task_update_senzing_configuration(config):
     # FIXME: start here.
