@@ -3,19 +3,6 @@
 '''
 # -----------------------------------------------------------------------------
 # template-python.py Example python skeleton.
-# Can be used as a boiler-plate to build new python scripts.
-# This skeleton implements the following features:
-#   1) "command subcommand" command line.
-#   2) A structured command line parser and "-help"
-#   3) Configuration via:
-#      3.1) Command line options
-#      3.2) Environment variables
-#      3.3) Configuration file
-#      3.4) Default
-#   4) Messages dictionary
-#   5) Logging and Log Level support.
-#   6) Entry / Exit log messages.
-#   7) Docker support.
 # -----------------------------------------------------------------------------
 '''
 
@@ -29,6 +16,7 @@ import os
 import signal
 import sys
 import time
+import urllib.request
 
 # Import from https://pypi.org/
 
@@ -68,6 +56,11 @@ CONFIGURATION_LOCATOR = {
         "default": None,
         "env": "SENZING_DATABASE_URL",
         "cli": "database-url"
+    },
+    "input_sql_url": {
+        "default": "",
+        "env": "SENZING_INPUT_SQL_URL",
+        "cli": "input-sql-url"
     },
     "log_level_parameter": {
         "default": "info",
@@ -117,7 +110,7 @@ def get_parser():
     subcommands = {
         'all': {
             "help": 'Perform all initialization tasks.',
-            "argument_aspects": ["common"],
+            "argument_aspects": ["common", "init_sql"],
         },
         'sleep': {
             "help": 'Do nothing but sleep. For Docker testing.',
@@ -172,38 +165,13 @@ def get_parser():
                 "help": "Path to Senzing binaries. Default: /opt/senzing/g2"
             },
         },
-        "common": {
+        "init_sql": {
             "--input-sql-url": {
-                "dest": "senzing_input_sql_url",
+                "dest": "input_sql_url",
                 "metavar": "SENZING_INPUT_SQL_URL",
                 "help": "file:// or http:// location of file of SQL statements. Default: none"
             },
-            "--database-url": {
-                "dest": "g2_database_url_generic",
-                "metavar": "SENZING_DATABASE_URL",
-                "help": "URL of PostgreSQL database. Default: none"
-            },
-            "--debug": {
-                "dest": "debug",
-                "action": "store_true",
-                "help": "Enable debugging. (SENZING_DEBUG) Default: False"
-            },
-            "--engine-configuration-json": {
-                "dest": "engine_configuration_json",
-                "metavar": "SENZING_ENGINE_CONFIGURATION_JSON",
-                "help": "Advanced Senzing engine configuration. Default: none"
-            },
-            "--etc-dir": {
-                "dest": "senzing_etc_dir",
-                "metavar": "SENZING_ETC_DIR",
-                "help": "Path to Senzing configuration. Default: /etc/opt/senzing"
-            },
-            "--g2-dir": {
-                "dest": "senzing_g2_dir",
-                "metavar": "SENZING_G2_DIR",
-                "help": "Path to Senzing binaries. Default: /opt/senzing/g2"
-            },
-        },        
+        },
     }
 
     # Augment "subcommands" variable with arguments specified by aspects.
@@ -403,6 +371,11 @@ def get_configuration(subcommand, args):
         integer_string = result.get(integer)
         result[integer] = int(integer_string)
 
+    # Normalize SENZING_INPUT_URL
+
+    # if result.get('senzing_input_sql_url', "").startswith("file://"):
+    #     result['senzing_input_sql_url'] = result.get('senzing_input_sql_url')[7:]
+
     return result
 
 
@@ -514,6 +487,20 @@ def exit_silently():
     sys.exit(0)
 
 # -----------------------------------------------------------------------------
+# tasks
+#   Common function signature: do_XXX(args)
+# -----------------------------------------------------------------------------
+
+def task_process_sql_file(config):
+
+    input_url = config.get('input_sql_url')
+    if input_url:
+        with urllib.request.urlopen(input_url) as input_file:
+            for line in input_file:
+                line_string = line.decode('utf-8')
+                print(line_string)
+
+# -----------------------------------------------------------------------------
 # do_* functions
 #   Common function signature: do_XXX(args)
 # -----------------------------------------------------------------------------
@@ -548,7 +535,8 @@ def do_all(subcommand, args):
 
     # Do work.
 
-    print("senzing-dir: {senzing_dir}; debug: {debug}".format(**config))
+    print("senzing-g2-dir: {senzing_g2_dir}; debug: {debug}".format(**config))
+    task_process_sql_file(config)
 
     # Epilog.
 
