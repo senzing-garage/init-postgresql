@@ -626,25 +626,29 @@ def get_db_params(config):
 
 def task_process_sql_file(config):
 
+    db_connection = None
     input_url = config.get('input_sql_url')
     if input_url:
         with urllib.request.urlopen(input_url) as input_file:
-            db_connection = None
-            try:
-                db_params = get_db_params(config)
-                db_connection = psycopg2.connect(**db_params)
-                db_cursor = db_connection.cursor()
-                for line in input_file:
-                    line_string = line.decode('utf-8').strip()
-                    if line_string:
+            db_params = get_db_params(config)
+            for line in input_file:
+                line_string = line.decode('utf-8').strip()
+                if line_string:
+                    try:
+                        db_connection = psycopg2.connect(**db_params)
+                        db_cursor = db_connection.cursor()
                         db_cursor.execute(line_string)
-                db_cursor.close()
-                db_connection.commit()
-            except (Exception, psycopg2.DatabaseError) as error:
-                logging.error(message_error(999, error))
-            finally:
-                if db_connection is not None:
-                    db_connection.close()
+                        db_cursor.close()
+                        db_connection.commit()
+                    except (Exception, psycopg2.DatabaseError) as error:
+                        err_message = ' '.join(str(error).split())
+                        logging.error(message_error(999, err_message))
+    if db_connection is not None:
+        db_connection.close()
+
+def task_update_senzing_configuration(config):
+    # FIXME: start here.
+    pass
 
 # -----------------------------------------------------------------------------
 # do_* functions
@@ -682,8 +686,8 @@ def do_all(subcommand, args):
 
     # Do work.
 
-    print("senzing-g2-dir: {senzing_g2_dir}; debug: {debug}".format(**config))
     task_process_sql_file(config)
+    task_update_senzing_configuration(config)
 
     # Epilog.
 
