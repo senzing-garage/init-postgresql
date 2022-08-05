@@ -686,7 +686,7 @@ def task_process_sql_file(config):
 
 
 def task_update_senzing_configuration(config):
-    # FIXME: start here.
+    # FIXME: start here. Use logic from init-container
     pass
 
 # -----------------------------------------------------------------------------
