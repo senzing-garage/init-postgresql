@@ -47,6 +47,7 @@ optional arguments:
     1. [Docker volumes](#docker-volumes)
     1. [Database support](#database-support)
     1. [Run Docker container](#run-docker-container)
+1. [Demonstrate using docker-compose](#demonstrate-using-docker-compose)
 1. [Develop](#develop)
     1. [Prerequisites for development](#prerequisites-for-development)
     1. [Clone repository](#clone-repository)
@@ -326,7 +327,7 @@ see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/
 
     ```console
     export GIT_ACCOUNT=senzing
-    export GIT_REPOSITORY=init-postgres
+    export GIT_REPOSITORY=init-postgresql
     export GIT_ACCOUNT_DIR=~/${GIT_ACCOUNT}.git
     export GIT_REPOSITORY_DIR="${GIT_ACCOUNT_DIR}/${GIT_REPOSITORY}"
     ```
@@ -397,7 +398,7 @@ see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/
 
     ```console
     export GIT_ACCOUNT=senzing
-    export GIT_REPOSITORY=init-postgres
+    export GIT_REPOSITORY=init-postgresql
     export GIT_ACCOUNT_DIR=~/${GIT_ACCOUNT}.git
     export GIT_REPOSITORY_DIR="${GIT_ACCOUNT_DIR}/${GIT_REPOSITORY}"
     ```
