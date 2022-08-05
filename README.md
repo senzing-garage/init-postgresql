@@ -354,9 +354,9 @@ see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/
 
     ```console
     export SENZING_VAR_DIR=${SENZING_VOLUME}/var
-    export PGADMIN_DIR=${SENZING_VAR_DIR}/pgadmin
-    export POSTGRES_DIR=${SENZING_VAR_DIR}/postgres
-    export RABBITMQ_DIR=${SENZING_VAR_DIR}/rabbitmq
+    export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin
+    export POSTGRES_DIR=${SENZING_VOLUME}/postgres
+    export RABBITMQ_DIR=${SENZING_VOLUME}/rabbitmq
     ```
 
 1. Create directories.
