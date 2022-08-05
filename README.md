@@ -354,17 +354,17 @@ see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/
    Example:
 
     ```console
-    export SENZING_VAR_DIR=${SENZING_VOLUME}/var
     export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin
     export POSTGRES_DIR=${SENZING_VOLUME}/postgres
     export RABBITMQ_DIR=${SENZING_VOLUME}/rabbitmq
+    export SENZING_VAR_DIR=${SENZING_VOLUME}/var
     ```
 
 1. Create directories.
    Example:
 
     ```console
-    mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR}
+    mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR} ${SENZING_VAR_DIR}
     ```
 
 1. Launch docker-compose formation.
