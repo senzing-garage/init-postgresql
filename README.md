@@ -260,15 +260,15 @@ Inside the Docker container, Senzing artifacts will be located in `/opt/senzing`
     cat ${SENZING_G2_DIR}/g2BuildVersion.json
     cat ${SENZING_DATA_VERSION_DIR}/libpostal/data_version
     ```
-    
+
 1. Identify the `data_version`, `etc`, `g2`, and `var` directories.
    Example:
 
     ```console
-    export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin   
-    export POSTGRES_DIR=${SENZING_VOLUME}/postgres     
-    ```    
-export PGADMIN_DIR=${SENZING_VAR_DIR}/pgadmin    
+    export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin
+    export POSTGRES_DIR=${SENZING_VOLUME}/postgres
+    ```
+export PGADMIN_DIR=${SENZING_VAR_DIR}/pgadmin
 
 ### Database support
 
@@ -316,6 +316,39 @@ Unset `*_PARAMETER` environment variables have no effect on the
 1. For more examples of use, see [Examples of Docker](#examples-of-docker).
 
 ## Demonstrate using docker-compose
+
+### Volumes
+
+1. :pencil2: Specify the directory where Senzing should be installed on the local host.
+   Example:
+
+    ```console
+    export SENZING_VOLUME=~/my-senzing
+    ```
+
+    1. :warning:
+       **macOS** - [File sharing](https://github.com/Senzing/knowledge-base/blob/main/HOWTO/share-directories-with-docker.md#macos)
+       must be enabled for `SENZING_VOLUME`.
+    1. :warning:
+       **Windows** - [File sharing](https://github.com/Senzing/knowledge-base/blob/main/HOWTO/share-directories-with-docker.md#windows)
+       must be enabled for `SENZING_VOLUME`.
+
+1. Identify directories on the local host.
+   Example:
+
+    ```console
+    export SENZING_VAR_DIR=${SENZING_VOLUME}/var
+    export PGADMIN_DIR=${SENZING_VAR_DIR}/pgadmin
+    export POSTGRES_DIR=${SENZING_VAR_DIR}/postgres
+    export RABBITMQ_DIR=${SENZING_VAR_DIR}/rabbitmq
+    ```
+
+1. Create directories.
+   Example:
+
+    ```console
+    mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR}
+    ```
 
 ## Develop
 

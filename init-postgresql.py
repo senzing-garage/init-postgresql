@@ -37,7 +37,7 @@ import time
 __all__ = []
 __version__ = "1.0.0"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-08-04'
+__updated__ = '2022-08-05'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -118,13 +118,6 @@ def get_parser():
         'all': {
             "help": 'Perform all initialization tasks.',
             "argument_aspects": ["common"],
-            "arguments": {
-                "--senzing-dir": {
-                    "dest": "senzing_dir",
-                    "metavar": "SENZING_DIR",
-                    "help": "Location of Senzing. Default: /opt/senzing"
-                },
-            },
         },
         'sleep': {
             "help": 'Do nothing but sleep. For Docker testing.',
@@ -179,6 +172,38 @@ def get_parser():
                 "help": "Path to Senzing binaries. Default: /opt/senzing/g2"
             },
         },
+        "common": {
+            "--input-sql-url": {
+                "dest": "senzing_input_sql_url",
+                "metavar": "SENZING_INPUT_SQL_URL",
+                "help": "file:// or http:// location of file of SQL statements. Default: none"
+            },
+            "--database-url": {
+                "dest": "g2_database_url_generic",
+                "metavar": "SENZING_DATABASE_URL",
+                "help": "URL of PostgreSQL database. Default: none"
+            },
+            "--debug": {
+                "dest": "debug",
+                "action": "store_true",
+                "help": "Enable debugging. (SENZING_DEBUG) Default: False"
+            },
+            "--engine-configuration-json": {
+                "dest": "engine_configuration_json",
+                "metavar": "SENZING_ENGINE_CONFIGURATION_JSON",
+                "help": "Advanced Senzing engine configuration. Default: none"
+            },
+            "--etc-dir": {
+                "dest": "senzing_etc_dir",
+                "metavar": "SENZING_ETC_DIR",
+                "help": "Path to Senzing configuration. Default: /etc/opt/senzing"
+            },
+            "--g2-dir": {
+                "dest": "senzing_g2_dir",
+                "metavar": "SENZING_G2_DIR",
+                "help": "Path to Senzing binaries. Default: /opt/senzing/g2"
+            },
+        },        
     }
 
     # Augment "subcommands" variable with arguments specified by aspects.
@@ -528,9 +553,6 @@ def do_all(subcommand, args):
     # Epilog.
 
     logging.info(exit_template(config))
-
-
-
 
 
 def do_sleep(subcommand, args):
