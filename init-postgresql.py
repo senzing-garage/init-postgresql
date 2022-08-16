@@ -24,12 +24,16 @@ from urllib.parse import urlparse, urlunparse
 
 import psycopg2
 
+# Import from Senzing.
+
+from senzing import G2Config, G2ConfigMgr, G2ModuleException
+
 # Metadata
 
 __all__ = []
 __version__ = "1.0.0"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-08-05'
+__updated__ = '2022-08-16'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -52,6 +56,11 @@ RESERVED_CHARACTER_LISt = [';', ',', '/', '?', ':', '@', '=', '&']
 # 1) Command line options, 2) Environment variables, 3) Configuration files, 4) Default values
 
 CONFIGURATION_LOCATOR = {
+    "data_dir": {
+        "default": "/opt/senzing/data",
+        "env": "SENZING_DATA_DIR",
+        "cli": "data-dir"
+    },
     "debug": {
         "default": False,
         "env": "SENZING_DEBUG",
@@ -62,10 +71,20 @@ CONFIGURATION_LOCATOR = {
         "env": "SENZING_ENGINE_CONFIGURATION_JSON",
         "cli": "engine-configuration-json"
     },
+    "etc_dir": {
+        "default": "/etc/opt/senzing",
+        "env": "SENZING_ETC_DIR",
+        "cli": "etc-dir"
+    },
     "database_url": {
         "default": None,
         "env": "SENZING_DATABASE_URL",
         "cli": "database-url"
+    },
+    "g2_dir": {
+        "default": "/opt/senzing/g2",
+        "env": "SENZING_G2_DIR",
+        "cli": "g2-dir"
     },
     "input_sql_url": {
         "default": "",
@@ -225,8 +244,23 @@ MESSAGE_DEBUG = 900
 
 MESSAGE_DICTIONARY = {
     "100": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}I",
+    "163": "{0} - Configuring for Senzing database cluster based on SENZING_ENGINE_CONFIGURATION_JSON",
+    "170": "Created new default config in SYS_CFG having ID {0}",
+    "171": "Default config in SYS_CFG already exists having ID {0}",
+    "180": "{0} - Postgresql detected.  Installing governor from {1}",
+    "181": "{0} - Postgresql detected. Using existing governor; no change.",
+    "182": "Initializing for SQLite",
+    "183": "Initializing for Db2",
+    "184": "Initializing for MS SQL",
+    "185": "Initializing for MySQL",
+    "186": "Initializing for PostgreSQL",
+    "187": "{0} - Directory does not exist; no change.",
+    "188": "{0} - Cannot write to read-only filesystem; no change.",
+    "292": "Configuration change detected.  Old: {0} New: {1}",
     "292": "Configuration change detected.  Old: {0} New: {1}",
     "293": "For information on warnings and errors, see https://github.com/Senzing/init-postgresql#errors",
+    "293": "For information on warnings and errors, see https://github.com/Senzing/stream-loader#errors",
+    "294": "Version: {0}  Updated: {1}",
     "294": "Version: {0}  Updated: {1}",
     "295": "Sleeping infinitely.",
     "296": "Sleeping {0} seconds.",
@@ -234,8 +268,10 @@ MESSAGE_DICTIONARY = {
     "298": "Exit {0}",
     "299": "{0}",
     "300": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}W",
+    "301": "Could not download the senzing postgresql governor from {0}. Ignore this on air gapped systems. Exception details: {1}",
     "499": "{0}",
     "500": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
+    "510": "{0} - File is missing.",
     "695": "Unknown database scheme '{0}' in database url '{1}'",
     "696": "Bad SENZING_SUBCOMMAND: {0}.",
     "697": "No processing done.",
@@ -243,21 +279,20 @@ MESSAGE_DICTIONARY = {
     "699": "{0}",
     "700": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
     "701": "Missing required parameter: {0}",
+    "703": "SENZING_ENGINE_CONFIGURATION_JSON specified but not SENZING_OPT_IBM_DB2_CLIDRIVER_CFG_DB2DSDRIVER_CFG_CONTENTS. If the Senzing engine config is specified, the contents of db2dsdriver.cfg must also be provided.",
+    "704": "SENZING_ENGINE_CONFIGURATION_JSON specified but not SENZING_OPT_MICROSOFT_MSODBCSQL17_ETC_ODBC_INI_CONTENTS. If the Senzing engine config is specified, the contents of odbc.ini must also be provided.",
+    "801": "SENZING_ENGINE_CONFIGURATION_JSON contains multiple database schemes: {0}",
+    "879": "Senzing SDK was not imported.",
     "885": "License has expired.",
-    "886": "G2Engine.addRecord() bad return code: {0}; JSON: {1}",
-    "888": "G2Engine.addRecord() G2ModuleNotInitialized: {0}; JSON: {1}",
-    "889": "G2Engine.addRecord() G2ModuleGenericException: {0}; JSON: {1}",
-    "890": "G2Engine.addRecord() Exception: {0}; JSON: {1}",
     "891": "Original and new database URLs do not match. Original URL: {0}; Reconstructed URL: {1}",
-    "892": "Could not initialize G2Product with '{0}'. Error: {1}",
-    "893": "Could not initialize G2Hasher with '{0}'. Error: {1}",
-    "894": "Could not initialize G2Diagnostic with '{0}'. Error: {1}",
-    "895": "Could not initialize G2Audit with '{0}'. Error: {1}",
     "896": "Could not initialize G2ConfigMgr with '{0}'. Error: {1}",
     "897": "Could not initialize G2Config with '{0}'. Error: {1}",
-    "898": "Could not initialize G2Engine with '{0}'. Error: {1}",
     "899": "{0}",
     "900": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}D",
+    "901": "{0} will not be modified",
+    "902": "{0} - Was not created because there is no {1}",
+    "950": "Enter function: {0}",
+    "951": "Exit  function: {0}",
     "998": "Debugging enabled.",
     "999": "{0}",
 }
@@ -500,6 +535,64 @@ def exit_silently():
     ''' Exit program. '''
     sys.exit(0)
 
+
+# -----------------------------------------------------------------------------
+# Class: G2Initializer
+# -----------------------------------------------------------------------------
+
+
+class G2Initializer:
+
+    def __init__(self, g2_configuration_manager, g2_config):
+        self.g2_config = g2_config
+        self.g2_configuration_manager = g2_configuration_manager
+
+    def create_default_config_id(self):
+        ''' Initialize the G2 database. '''
+
+        # Determine of a default/initial G2 configuration already exists.
+
+        default_config_id_bytearray = bytearray()
+        try:
+            self.g2_configuration_manager.getDefaultConfigID(default_config_id_bytearray)
+        except Exception as err:
+            raise Exception("G2ConfigMgr.getDefaultConfigID({0}) failed".format(default_config_id_bytearray)) from err
+
+        # If a default configuration exists, there is nothing more to do.
+
+        if default_config_id_bytearray:
+            logging.info(message_info(171, default_config_id_bytearray.decode()))
+            return None
+
+        # If there is no default configuration, create one in the 'configuration_bytearray' variable.
+
+        config_handle = self.g2_config.create()
+        configuration_bytearray = bytearray()
+        try:
+            self.g2_config.save(config_handle, configuration_bytearray)
+        except Exception as err:
+            raise Exception("G2Confg.save({0}, {1}) failed".format(config_handle, configuration_bytearray)) from err
+
+        self.g2_config.close(config_handle)
+
+        # Save configuration JSON into G2 database.
+
+        config_comment = "Initial configuration."
+        new_config_id = bytearray()
+        try:
+            self.g2_configuration_manager.addConfig(configuration_bytearray.decode(), config_comment, new_config_id)
+        except Exception as err:
+            raise Exception("G2ConfigMgr.addConfig({0}, {1}, {2}) failed".format(configuration_bytearray.decode(), config_comment, new_config_id)) from err
+
+        # Set the default configuration ID.
+
+        try:
+            self.g2_configuration_manager.setDefaultConfigID(new_config_id)
+        except Exception as err:
+            raise Exception("G2ConfigMgr.setDefaultConfigID({0}) failed".format(new_config_id)) from err
+
+        return new_config_id
+
 # -----------------------------------------------------------------------------
 # Database URL parsing
 # -----------------------------------------------------------------------------
@@ -604,9 +697,10 @@ def parse_database_url(original_senzing_database_url):
 # -----------------------------------------------------------------------------
 
 
-def reverse_replace(a_string, old_value, new_value, occurrence):
-    split_list = a_string.rsplit(old_value, occurrence)
-    return new_value.join(split_list)
+def create_senzing_database_url(database_url):
+    '''Transform PostgreSQL URL to a format Senzing understands.'''
+    parsed_database_url = parse_database_url(database_url)
+    return "{scheme}://{username}:{password}@{hostname}:{port}:{schema}/".format(**parsed_database_url)
 
 
 def get_db_parameters(database_url):
@@ -642,6 +736,85 @@ def process_sql_file(input_url, db_parameters):
                         logging.error(message_error(999, err_message))
     if db_connection is not None:
         db_connection.close()
+
+
+def reverse_replace(a_string, old_value, new_value, occurrence):
+    split_list = a_string.rsplit(old_value, occurrence)
+    return new_value.join(split_list)
+
+# -----------------------------------------------------------------------------
+# Senzing services.
+# -----------------------------------------------------------------------------
+
+
+def get_g2_configuration_dictionary(config):
+    ''' Construct a dictionary in the form of the old ini files. '''
+
+    result = {
+        "PIPELINE": {
+            "CONFIGPATH": config.get("etc_dir"),
+            "RESOURCEPATH": "{0}/resources".format(config.get("g2_dir")),
+            "SUPPORTPATH": config.get("data_dir"),
+        },
+        "SQL": {
+            "CONNECTION": create_senzing_database_url(config.get('database_url')),
+        }
+    }
+    return result
+
+
+def get_g2_configuration_json(config):
+    ''' Return a JSON string with Senzing configuration. '''
+    result = ""
+    if config.get('engine_configuration_json'):
+        result = config.get('engine_configuration_json')
+    else:
+        result = json.dumps(get_g2_configuration_dictionary(config))
+    return result
+
+# -----------------------------------------------------------------------------
+# Senzing services.
+# -----------------------------------------------------------------------------
+
+
+def get_g2_config(config, g2_config_name="init-container-G2-config"):
+    ''' Get the G2Config resource. '''
+    logging.debug(message_debug(950, sys._getframe().f_code.co_name))
+    global g2_config_singleton
+
+    if g2_config_singleton:
+        return g2_config_singleton
+
+    try:
+        g2_configuration_json = get_g2_configuration_json(config)
+        result = G2Config()
+        result.init(g2_config_name, g2_configuration_json, config.get('debug'))
+    except G2ModuleException as err:
+        exit_error(897, g2_configuration_json, err)
+
+    g2_config_singleton = result
+    logging.debug(message_debug(951, sys._getframe().f_code.co_name))
+    return result
+
+
+def get_g2_configuration_manager(config, g2_configuration_manager_name="init-container-G2-configuration-manager"):
+    ''' Get the G2ConfigMgr resource. '''
+    logging.debug(message_debug(950, sys._getframe().f_code.co_name))
+    global g2_configuration_manager_singleton
+
+    if g2_configuration_manager_singleton:
+        return g2_configuration_manager_singleton
+
+    try:
+        g2_configuration_json = get_g2_configuration_json(config)
+        result = G2ConfigMgr()
+        result.init(g2_configuration_manager_name, g2_configuration_json, config.get('debug'))
+    except G2ModuleException as err:
+        exit_error(896, g2_configuration_json, err)
+
+    g2_configuration_manager_singleton = result
+    logging.debug(message_debug(951, sys._getframe().f_code.co_name))
+    return result
 
 # -----------------------------------------------------------------------------
 # tasks
@@ -691,7 +864,22 @@ def task_process_sql_file(config):
 
 def task_update_senzing_configuration(config):
     # FIXME: start here. Use logic from init-container
-    pass
+
+    # Get Senzing resources.
+
+    g2_config = get_g2_config(config)
+    g2_configuration_manager = get_g2_configuration_manager(config)
+
+    # Initialize G2 database.
+
+    g2_initializer = G2Initializer(g2_configuration_manager, g2_config)
+    try:
+        default_config_id = g2_initializer.create_default_config_id()
+        if default_config_id:
+            logging.info(message_info(170, default_config_id.decode()))
+    except Exception as err:
+        logging.error(message_error(701, err, type(err.__cause__), err.__cause__))
+
 
 # -----------------------------------------------------------------------------
 # do_* functions
