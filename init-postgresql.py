@@ -52,6 +52,11 @@ SAFE_CHARACTER_LIST = ['$', '-', '_', '.', '+', '!', '*', '(', ')', ',', '"'] + 
 UNSAFE_CHARACTER_LIST = ['"', '<', '>', '#', '%', '{', '}', '|', '\\', '^', '~', '[', ']', '`']
 RESERVED_CHARACTER_LISt = [';', ',', '/', '?', ':', '@', '=', '&']
 
+# Singletons
+
+G2_CONFIG_SINGLETON = None
+G2_CONFIGURATION_MANAGER_SINGLETON = None
+
 # The "configuration_locator" describes where configuration variables are in:
 # 1) Command line options, 2) Environment variables, 3) Configuration files, 4) Default values
 
@@ -257,10 +262,7 @@ MESSAGE_DICTIONARY = {
     "187": "{0} - Directory does not exist; no change.",
     "188": "{0} - Cannot write to read-only filesystem; no change.",
     "292": "Configuration change detected.  Old: {0} New: {1}",
-    "292": "Configuration change detected.  Old: {0} New: {1}",
-    "293": "For information on warnings and errors, see https://github.com/Senzing/init-postgresql#errors",
     "293": "For information on warnings and errors, see https://github.com/Senzing/stream-loader#errors",
-    "294": "Version: {0}  Updated: {1}",
     "294": "Version: {0}  Updated: {1}",
     "295": "Sleeping infinitely.",
     "296": "Sleeping {0} seconds.",
@@ -542,6 +544,7 @@ def exit_silently():
 
 
 class G2Initializer:
+    '''Perform steps to initialize Senzing.'''
 
     def __init__(self, g2_configuration_manager, g2_config):
         self.g2_config = g2_config
@@ -779,11 +782,10 @@ def get_g2_configuration_json(config):
 
 def get_g2_config(config, g2_config_name="init-container-G2-config"):
     ''' Get the G2Config resource. '''
-    logging.debug(message_debug(950, sys._getframe().f_code.co_name))
-    global g2_config_singleton
+    global G2_CONFIG_SINGLETON
 
-    if g2_config_singleton:
-        return g2_config_singleton
+    if G2_CONFIG_SINGLETON:
+        return G2_CONFIG_SINGLETON
 
     try:
         g2_configuration_json = get_g2_configuration_json(config)
@@ -792,18 +794,16 @@ def get_g2_config(config, g2_config_name="init-container-G2-config"):
     except G2ModuleException as err:
         exit_error(897, g2_configuration_json, err)
 
-    g2_config_singleton = result
-    logging.debug(message_debug(951, sys._getframe().f_code.co_name))
+    G2_CONFIG_SINGLETON = result
     return result
 
 
 def get_g2_configuration_manager(config, g2_configuration_manager_name="init-container-G2-configuration-manager"):
     ''' Get the G2ConfigMgr resource. '''
-    logging.debug(message_debug(950, sys._getframe().f_code.co_name))
-    global g2_configuration_manager_singleton
+    global G2_CONFIGURATION_MANAGER_SINGLETON
 
-    if g2_configuration_manager_singleton:
-        return g2_configuration_manager_singleton
+    if G2_CONFIGURATION_MANAGER_SINGLETON:
+        return G2_CONFIGURATION_MANAGER_SINGLETON
 
     try:
         g2_configuration_json = get_g2_configuration_json(config)
@@ -812,8 +812,7 @@ def get_g2_configuration_manager(config, g2_configuration_manager_name="init-con
     except G2ModuleException as err:
         exit_error(896, g2_configuration_json, err)
 
-    g2_configuration_manager_singleton = result
-    logging.debug(message_debug(951, sys._getframe().f_code.co_name))
+    G2_CONFIGURATION_MANAGER_SINGLETON = result
     return result
 
 # -----------------------------------------------------------------------------
@@ -863,7 +862,6 @@ def task_process_sql_file(config):
 
 
 def task_update_senzing_configuration(config):
-    # FIXME: start here. Use logic from init-container
 
     # Get Senzing resources.
 
