@@ -2,7 +2,10 @@
 
 '''
 # -----------------------------------------------------------------------------
-# template-python.py Example python skeleton.
+# init-postgresql initializes a PostgreSQL database for use with Senzing.
+#   - Creates the schema (tables, indexes, etc.)
+#   - Inserts initial Senzing configuration
+#   - init-postgresql.py is idempotent.  It can be run repeatedly.
 # -----------------------------------------------------------------------------
 '''
 
@@ -101,21 +104,6 @@ CONFIGURATION_LOCATOR = {
         "env": "SENZING_LOG_LEVEL",
         "cli": "log-level-parameter"
     },
-    "senzing_data_dir": {
-        "default": "/opt/senzing/data",
-        "env": "SENZING_DATA_DIR",
-        "cli": "data-dir"
-    },
-    "senzing_etc_dir": {
-        "default": "/etc/opt/senzing",
-        "env": "SENZING_ETC_DIR",
-        "cli": "etc-dir"
-    },
-    "senzing_g2_dir": {
-        "default": "/opt/senzing/g2",
-        "env": "SENZING_G2_DIR",
-        "cli": "g2-dir"
-    },
     "sleep_time_in_seconds": {
         "default": 0,
         "env": "SENZING_SLEEP_TIME_IN_SECONDS",
@@ -131,6 +119,7 @@ CONFIGURATION_LOCATOR = {
 
 KEYS_TO_REDACT = [
     "database_url",
+    "engine_configuration_json",
 ]
 
 # -----------------------------------------------------------------------------
@@ -169,7 +158,7 @@ def get_parser():
     argument_aspects = {
         "common": {
             "--data-dir": {
-                "dest": "senzing_data_dir",
+                "dest": "data_dir",
                 "metavar": "SENZING_DATA_DIR",
                 "help": "Path to Senzing data. Default: /opt/senzing/data"
             },
@@ -189,12 +178,12 @@ def get_parser():
                 "help": "Advanced Senzing engine configuration. Default: none"
             },
             "--etc-dir": {
-                "dest": "senzing_etc_dir",
+                "dest": "etc_dir",
                 "metavar": "SENZING_ETC_DIR",
                 "help": "Path to Senzing configuration. Default: /etc/opt/senzing"
             },
             "--g2-dir": {
-                "dest": "senzing_g2_dir",
+                "dest": "g2_dir",
                 "metavar": "SENZING_G2_DIR",
                 "help": "Path to Senzing binaries. Default: /opt/senzing/g2"
             },

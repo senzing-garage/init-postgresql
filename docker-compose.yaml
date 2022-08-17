@@ -106,6 +106,7 @@ services:
             "CONNECTION": "postgresql://${POSTGRES_USERNAME:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-senzing-postgres}:${POSTGRES_PORT:-5432}:${POSTGRES_DB:-G2}/"
           }
         }
+      SENZING_INPUT_SQL_URL: "file:///opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql"
       SENZING_SUBCOMMAND: all
     image: senzing/init-postgresql:${SENZING_DOCKER_IMAGE_VERSION_INIT_POSTGRESQL:-latest}
     networks:
