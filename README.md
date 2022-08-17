@@ -48,6 +48,9 @@ optional arguments:
     1. [Database support](#database-support)
     1. [Run Docker container](#run-docker-container)
 1. [Demonstrate using docker-compose](#demonstrate-using-docker-compose)
+    1. [Clone repository for docker-compose](#clone-repository-for-docker-compose)
+    1. [Volumes](#volumes)
+    1. [Deploy docker-compose stack](#deploy-docker-compose-stack)
 1. [Develop](#develop)
     1. [Prerequisites for development](#prerequisites-for-development)
     1. [Clone repository](#clone-repository)
@@ -269,7 +272,6 @@ Inside the Docker container, Senzing artifacts will be located in `/opt/senzing`
     export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin
     export POSTGRES_DIR=${SENZING_VOLUME}/postgres
     ```
-export PGADMIN_DIR=${SENZING_VAR_DIR}/pgadmin
 
 ### Database support
 
@@ -318,7 +320,7 @@ Unset `*_PARAMETER` environment variables have no effect on the
 
 ## Demonstrate using docker-compose
 
-### Clone repository
+### Clone repository for docker-compose
 
 For more information on environment variables,
 see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md).
@@ -365,6 +367,26 @@ see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/
 
     ```console
     mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR} ${SENZING_VAR_DIR}
+    ```
+
+### Deploy docker-compose stack
+
+1. Get docker image version metadata.
+   Example:
+
+    ```console
+    curl -X GET \
+        --output /tmp/docker-versions-stable.sh \
+        https://raw.githubusercontent.com/Senzing/knowledge-base/main/lists/docker-versions-stable.sh
+    source /tmp/docker-versions-stable.sh
+    ```
+
+1. Pull docker images.
+   Example:
+
+    ```console
+    cd ${GIT_REPOSITORY_DIR}
+    sudo --preserve-env docker-compose pull
     ```
 
 1. Launch docker-compose formation.
