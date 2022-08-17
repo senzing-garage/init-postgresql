@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=debian:11.3-slim@sha256:f6957458017ec31c4e325a76f39d6323c4c21b0e31572efa006baa927a160891
+ARG BASE_IMAGE=senzing/senzingapi-runtime:3.1.1
 FROM ${BASE_IMAGE}
 
 ENV REFRESHED_AT=2022-08-04
@@ -6,6 +6,8 @@ ENV REFRESHED_AT=2022-08-04
 LABEL Name="senzing/init-postgresql" \
       Maintainer="support@senzing.com" \
       Version="1.0.0"
+
+# Define health check.
 
 HEALTHCHECK CMD ["/app/healthcheck.sh"]
 
@@ -15,31 +17,47 @@ USER root
 
 # Install packages via apt.
 
-RUN apt-get update \
- && apt-get -y install \
-      less \
+RUN apt update \
+ && apt -y install \
+      gnupg2 \
+      libaio1 \
+      libodbc1 \
+      odbc-postgresql \
       python3 \
       python3-pip \
+      software-properties-common \
+      wget \
  && rm -rf /var/lib/apt/lists/*
 
 # Install packages via PIP.
 
-COPY requirements.txt ./
+COPY requirements.txt .
 RUN pip3 install --upgrade pip \
  && pip3 install -r requirements.txt \
- && rm requirements.txt
-
-# Install packages via apt.
+ && rm /requirements.txt
 
 # Copy files from repository.
 
 COPY ./rootfs /
+COPY ./init-postgresql.py /app/
+
+# Set environment variables for USER 1001.
+
+ENV LD_LIBRARY_PATH=/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib
+ENV ODBCSYSINI=/etc/opt/senzing
+ENV PATH=${PATH}:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin
+ENV PYTHONPATH=/opt/senzing/g2/sdk/python
+ENV SENZING_DOCKER_LAUNCHED=true
+
+# Set environment variables.
+
+ENV SENZING_SUBCOMMAND=all
 
 # Make non-root container.
 
-USER 1001
+USER 1001:1001
 
 # Runtime execution.
 
 WORKDIR /app
-CMD ["/app/sleep-infinity.sh"]
+ENTRYPOINT ["/app/init-postgresql.py"]

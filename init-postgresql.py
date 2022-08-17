@@ -33,7 +33,7 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 __all__ = []
 __version__ = "1.0.0"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-08-16'
+__updated__ = '2022-08-17'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -281,9 +281,6 @@ MESSAGE_DICTIONARY = {
     "699": "{0}",
     "700": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
     "701": "Missing required parameter: {0}",
-    "703": "SENZING_ENGINE_CONFIGURATION_JSON specified but not SENZING_OPT_IBM_DB2_CLIDRIVER_CFG_DB2DSDRIVER_CFG_CONTENTS. If the Senzing engine config is specified, the contents of db2dsdriver.cfg must also be provided.",
-    "704": "SENZING_ENGINE_CONFIGURATION_JSON specified but not SENZING_OPT_MICROSOFT_MSODBCSQL17_ETC_ODBC_INI_CONTENTS. If the Senzing engine config is specified, the contents of odbc.ini must also be provided.",
-    "801": "SENZING_ENGINE_CONFIGURATION_JSON contains multiple database schemes: {0}",
     "879": "Senzing SDK was not imported.",
     "885": "License has expired.",
     "891": "Original and new database URLs do not match. Original URL: {0}; Reconstructed URL: {1}",
@@ -437,13 +434,13 @@ def validate_configuration(config):
 
     subcommand = config.get('subcommand')
 
-    if subcommand in ['all', 'task2']:
+    if subcommand in ['all']:
 
         if not config.get('input_sql_url'):
             user_error_messages.append(message_error(701, 'SENZING_INPUT_SQL_URL'))
 
-        if not config.get('database_url'):
-            user_error_messages.append(message_error(701, 'SENZING_DATABASE_URL'))
+        if not config.get('database_url') and not config.get('engine_configuration_json'):
+            user_error_messages.append(message_error(701, 'either SENZING_DATABASE_URL or SENZING_ENGINE_CONFIGURATION_JSON'))
 
     # Log warning messages.
 
