@@ -95,7 +95,7 @@ CONFIGURATION_LOCATOR = {
         "cli": "g2-dir"
     },
     "input_sql_url": {
-        "default": "",
+        "default": "/opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql",
         "env": "SENZING_INPUT_SQL_URL",
         "cli": "input-sql-url"
     },
@@ -131,8 +131,8 @@ def get_parser():
     ''' Parse commandline arguments. '''
 
     subcommands = {
-        'all': {
-            "help": 'Perform all initialization tasks.',
+        'mandatory': {
+            "help": 'Perform mandatory initialization tasks.',
             "argument_aspects": ["common", "init_sql"],
         },
         'sleep': {
@@ -423,7 +423,7 @@ def validate_configuration(config):
 
     subcommand = config.get('subcommand')
 
-    if subcommand in ['all']:
+    if subcommand in ['mandatory']:
 
         if not config.get('input_sql_url'):
             user_error_messages.append(message_error(701, 'SENZING_INPUT_SQL_URL'))
@@ -522,7 +522,6 @@ def exit_error(index, *args):
 def exit_silently():
     ''' Exit program. '''
     sys.exit(0)
-
 
 # -----------------------------------------------------------------------------
 # Class: G2Initializer
@@ -867,7 +866,6 @@ def task_update_senzing_configuration(config):
     except Exception as err:
         logging.error(message_error(701, err, type(err.__cause__), err.__cause__))
 
-
 # -----------------------------------------------------------------------------
 # do_* functions
 #   Common function signature: do_XXX(args)
@@ -890,7 +888,7 @@ def do_docker_acceptance_test(subcommand, args):
     logging.info(exit_template(config))
 
 
-def do_all(subcommand, args):
+def do_mandatory(subcommand, args):
     ''' Do a task. '''
 
     # Get context from CLI, environment variables, and ini files.
