@@ -694,10 +694,13 @@ def create_senzing_database_url(database_url):
 
 def get_db_parameters(database_url):
     parsed_database_url = parse_database_url(database_url)
-    dbname = parsed_database_url.get('path')[1:]
+
+    # logging.error(message_error(999, "parsed_database_url: {0}".format(parsed_database_url)))
+    # dbname = parsed_database_url.get('path')[1:]
+    # logging.error(message_error(999, "dbname: {0}".format(dbname)))
 
     result = {
-        'dbname': dbname,
+        'dbname': parsed_database_url.get('schema', ""),
         'user': parsed_database_url.get('username', ""),
         'password':parsed_database_url.get('password', ""),
         'host':parsed_database_url.get('hostname', ""),
