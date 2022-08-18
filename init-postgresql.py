@@ -2,20 +2,10 @@
 
 '''
 # -----------------------------------------------------------------------------
-# template-python.py Example python skeleton.
-# Can be used as a boiler-plate to build new python scripts.
-# This skeleton implements the following features:
-#   1) "command subcommand" command line.
-#   2) A structured command line parser and "-help"
-#   3) Configuration via:
-#      3.1) Command line options
-#      3.2) Environment variables
-#      3.3) Configuration file
-#      3.4) Default
-#   4) Messages dictionary
-#   5) Logging and Log Level support.
-#   6) Entry / Exit log messages.
-#   7) Docker support.
+# init-postgresql initializes a PostgreSQL database for use with Senzing.
+#   - Creates the schema (tables, indexes, etc.)
+#   - Inserts initial Senzing configuration
+#   - init-postgresql.py is idempotent.  It can be run repeatedly.
 # -----------------------------------------------------------------------------
 '''
 
@@ -27,21 +17,30 @@ import linecache
 import logging
 import os
 import signal
+import string
 import sys
 import time
+import urllib.request
+from urllib.parse import urlparse, urlunparse
 
 # Import from https://pypi.org/
+
+import psycopg2
+
+# Import from Senzing.
+
+from senzing import G2Config, G2ConfigMgr, G2ModuleException
 
 # Metadata
 
 __all__ = []
 __version__ = "1.0.0"  # See https://www.python.org/dev/peps/pep-0396/
-__date__ = '2019-07-16'
-__updated__ = '2022-05-18'
+__date__ = '2022-08-04'
+__updated__ = '2022-08-17'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
-SENZING_PRODUCT_ID = "5xxx"
+SENZING_PRODUCT_ID = "5030"
 LOG_FORMAT = '%(asctime)s %(message)s'
 
 # Working with bytes.
@@ -50,24 +49,60 @@ KILOBYTES = 1024
 MEGABYTES = 1024 * KILOBYTES
 GIGABYTES = 1024 * MEGABYTES
 
+# Lists from https://www.ietf.org/rfc/rfc1738.txt
+
+SAFE_CHARACTER_LIST = ['$', '-', '_', '.', '+', '!', '*', '(', ')', ',', '"'] + list(string.ascii_letters)
+UNSAFE_CHARACTER_LIST = ['"', '<', '>', '#', '%', '{', '}', '|', '\\', '^', '~', '[', ']', '`']
+RESERVED_CHARACTER_LISt = [';', ',', '/', '?', ':', '@', '=', '&']
+
+# Singletons
+
+G2_CONFIG_SINGLETON = None
+G2_CONFIGURATION_MANAGER_SINGLETON = None
+
 # The "configuration_locator" describes where configuration variables are in:
 # 1) Command line options, 2) Environment variables, 3) Configuration files, 4) Default values
 
 CONFIGURATION_LOCATOR = {
+    "data_dir": {
+        "default": "/opt/senzing/data",
+        "env": "SENZING_DATA_DIR",
+        "cli": "data-dir"
+    },
     "debug": {
         "default": False,
         "env": "SENZING_DEBUG",
         "cli": "debug"
     },
-    "password": {
+    "engine_configuration_json": {
         "default": None,
-        "env": "SENZING_PASSWORD",
-        "cli": "password"
+        "env": "SENZING_ENGINE_CONFIGURATION_JSON",
+        "cli": "engine-configuration-json"
     },
-    "senzing_dir": {
-        "default": "/opt/senzing",
-        "env": "SENZING_DIR",
-        "cli": "senzing-dir"
+    "etc_dir": {
+        "default": "/etc/opt/senzing",
+        "env": "SENZING_ETC_DIR",
+        "cli": "etc-dir"
+    },
+    "database_url": {
+        "default": None,
+        "env": "SENZING_DATABASE_URL",
+        "cli": "database-url"
+    },
+    "g2_dir": {
+        "default": "/opt/senzing/g2",
+        "env": "SENZING_G2_DIR",
+        "cli": "g2-dir"
+    },
+    "input_sql_url": {
+        "default": "/opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql",
+        "env": "SENZING_INPUT_SQL_URL",
+        "cli": "input-sql-url"
+    },
+    "log_level_parameter": {
+        "default": "info",
+        "env": "SENZING_LOG_LEVEL",
+        "cli": "log-level-parameter"
     },
     "sleep_time_in_seconds": {
         "default": 0,
@@ -83,7 +118,8 @@ CONFIGURATION_LOCATOR = {
 # Enumerate keys in 'configuration_locator' that should not be printed to the log.
 
 KEYS_TO_REDACT = [
-    "password",
+    "database_url",
+    "engine_configuration_json",
 ]
 
 # -----------------------------------------------------------------------------
@@ -95,27 +131,9 @@ def get_parser():
     ''' Parse commandline arguments. '''
 
     subcommands = {
-        'task1': {
-            "help": 'Example task #1.',
-            "argument_aspects": ["common"],
-            "arguments": {
-                "--senzing-dir": {
-                    "dest": "senzing_dir",
-                    "metavar": "SENZING_DIR",
-                    "help": "Location of Senzing. Default: /opt/senzing"
-                },
-            },
-        },
-        'task2': {
-            "help": 'Example task #2.',
-            "argument_aspects": ["common"],
-            "arguments": {
-                "--password": {
-                    "dest": "password",
-                    "metavar": "SENZING_PASSWORD",
-                    "help": "Example of information redacted in the log. Default: None"
-                },
-            },
+        'mandatory': {
+            "help": 'Perform mandatory initialization tasks.',
+            "argument_aspects": ["common", "init_sql"],
         },
         'sleep': {
             "help": 'Do nothing but sleep. For Docker testing.',
@@ -139,6 +157,16 @@ def get_parser():
 
     argument_aspects = {
         "common": {
+            "--data-dir": {
+                "dest": "data_dir",
+                "metavar": "SENZING_DATA_DIR",
+                "help": "Path to Senzing data. Default: /opt/senzing/data"
+            },
+            "--database-url": {
+                "dest": "database_url",
+                "metavar": "SENZING_DATABASE_URL",
+                "help": "URL of PostgreSQL database. Default: none"
+            },
             "--debug": {
                 "dest": "debug",
                 "action": "store_true",
@@ -148,6 +176,23 @@ def get_parser():
                 "dest": "engine_configuration_json",
                 "metavar": "SENZING_ENGINE_CONFIGURATION_JSON",
                 "help": "Advanced Senzing engine configuration. Default: none"
+            },
+            "--etc-dir": {
+                "dest": "etc_dir",
+                "metavar": "SENZING_ETC_DIR",
+                "help": "Path to Senzing configuration. Default: /etc/opt/senzing"
+            },
+            "--g2-dir": {
+                "dest": "g2_dir",
+                "metavar": "SENZING_G2_DIR",
+                "help": "Path to Senzing binaries. Default: /opt/senzing/g2"
+            },
+        },
+        "init_sql": {
+            "--input-sql-url": {
+                "dest": "input_sql_url",
+                "metavar": "SENZING_INPUT_SQL_URL",
+                "help": "file:// or http:// location of file of SQL statements. Default: none"
             },
         },
     }
@@ -193,6 +238,18 @@ MESSAGE_DEBUG = 900
 
 MESSAGE_DICTIONARY = {
     "100": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}I",
+    "163": "{0} - Configuring for Senzing database cluster based on SENZING_ENGINE_CONFIGURATION_JSON",
+    "170": "Created new default config in SYS_CFG having ID {0}",
+    "171": "Default config in SYS_CFG already exists having ID {0}",
+    "180": "{0} - Postgresql detected.  Installing governor from {1}",
+    "181": "{0} - Postgresql detected. Using existing governor; no change.",
+    "182": "Initializing for SQLite",
+    "183": "Initializing for Db2",
+    "184": "Initializing for MS SQL",
+    "185": "Initializing for MySQL",
+    "186": "Initializing for PostgreSQL",
+    "187": "{0} - Directory does not exist; no change.",
+    "188": "{0} - Cannot write to read-only filesystem; no change.",
     "292": "Configuration change detected.  Old: {0} New: {1}",
     "293": "For information on warnings and errors, see https://github.com/Senzing/stream-loader#errors",
     "294": "Version: {0}  Updated: {1}",
@@ -202,29 +259,28 @@ MESSAGE_DICTIONARY = {
     "298": "Exit {0}",
     "299": "{0}",
     "300": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}W",
+    "301": "Could not download the senzing postgresql governor from {0}. Ignore this on air gapped systems. Exception details: {1}",
     "499": "{0}",
     "500": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
+    "510": "{0} - File is missing.",
     "695": "Unknown database scheme '{0}' in database url '{1}'",
     "696": "Bad SENZING_SUBCOMMAND: {0}.",
     "697": "No processing done.",
     "698": "Program terminated with error.",
     "699": "{0}",
     "700": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
+    "701": "Missing required parameter: {0}",
+    "879": "Senzing SDK was not imported.",
     "885": "License has expired.",
-    "886": "G2Engine.addRecord() bad return code: {0}; JSON: {1}",
-    "888": "G2Engine.addRecord() G2ModuleNotInitialized: {0}; JSON: {1}",
-    "889": "G2Engine.addRecord() G2ModuleGenericException: {0}; JSON: {1}",
-    "890": "G2Engine.addRecord() Exception: {0}; JSON: {1}",
     "891": "Original and new database URLs do not match. Original URL: {0}; Reconstructed URL: {1}",
-    "892": "Could not initialize G2Product with '{0}'. Error: {1}",
-    "893": "Could not initialize G2Hasher with '{0}'. Error: {1}",
-    "894": "Could not initialize G2Diagnostic with '{0}'. Error: {1}",
-    "895": "Could not initialize G2Audit with '{0}'. Error: {1}",
     "896": "Could not initialize G2ConfigMgr with '{0}'. Error: {1}",
     "897": "Could not initialize G2Config with '{0}'. Error: {1}",
-    "898": "Could not initialize G2Engine with '{0}'. Error: {1}",
     "899": "{0}",
     "900": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}D",
+    "901": "{0} will not be modified",
+    "902": "{0} - Was not created because there is no {1}",
+    "950": "Enter function: {0}",
+    "951": "Exit  function: {0}",
     "998": "Debugging enabled.",
     "999": "{0}",
 }
@@ -349,6 +405,11 @@ def get_configuration(subcommand, args):
         integer_string = result.get(integer)
         result[integer] = int(integer_string)
 
+    # Normalize SENZING_INPUT_URL
+
+    if result.get('input_sql_url', "").startswith("/"):
+        result['input_sql_url'] = "file://{0}".format(result.get('input_sql_url'))
+
     return result
 
 
@@ -362,10 +423,13 @@ def validate_configuration(config):
 
     subcommand = config.get('subcommand')
 
-    if subcommand in ['task1', 'task2']:
+    if subcommand in ['mandatory']:
 
-        if not config.get('senzing_dir'):
-            user_error_messages.append(message_error(414))
+        if not config.get('input_sql_url'):
+            user_error_messages.append(message_error(701, 'SENZING_INPUT_SQL_URL'))
+
+        if not config.get('database_url') and not config.get('engine_configuration_json'):
+            user_error_messages.append(message_error(701, 'either SENZING_DATABASE_URL or SENZING_ENGINE_CONFIGURATION_JSON'))
 
     # Log warning messages.
 
@@ -460,6 +524,349 @@ def exit_silently():
     sys.exit(0)
 
 # -----------------------------------------------------------------------------
+# Class: G2Initializer
+# -----------------------------------------------------------------------------
+
+
+class G2Initializer:
+    '''Perform steps to initialize Senzing.'''
+
+    def __init__(self, g2_configuration_manager, g2_config):
+        self.g2_config = g2_config
+        self.g2_configuration_manager = g2_configuration_manager
+
+    def create_default_config_id(self):
+        ''' Initialize the G2 database. '''
+
+        # Determine of a default/initial G2 configuration already exists.
+
+        default_config_id_bytearray = bytearray()
+        try:
+            self.g2_configuration_manager.getDefaultConfigID(default_config_id_bytearray)
+        except Exception as err:
+            raise Exception("G2ConfigMgr.getDefaultConfigID({0}) failed".format(default_config_id_bytearray)) from err
+
+        # If a default configuration exists, there is nothing more to do.
+
+        if default_config_id_bytearray:
+            logging.info(message_info(171, default_config_id_bytearray.decode()))
+            return None
+
+        # If there is no default configuration, create one in the 'configuration_bytearray' variable.
+
+        config_handle = self.g2_config.create()
+        configuration_bytearray = bytearray()
+        try:
+            self.g2_config.save(config_handle, configuration_bytearray)
+        except Exception as err:
+            raise Exception("G2Confg.save({0}, {1}) failed".format(config_handle, configuration_bytearray)) from err
+
+        self.g2_config.close(config_handle)
+
+        # Save configuration JSON into G2 database.
+
+        config_comment = "Initial configuration."
+        new_config_id = bytearray()
+        try:
+            self.g2_configuration_manager.addConfig(configuration_bytearray.decode(), config_comment, new_config_id)
+        except Exception as err:
+            raise Exception("G2ConfigMgr.addConfig({0}, {1}, {2}) failed".format(configuration_bytearray.decode(), config_comment, new_config_id)) from err
+
+        # Set the default configuration ID.
+
+        try:
+            self.g2_configuration_manager.setDefaultConfigID(new_config_id)
+        except Exception as err:
+            raise Exception("G2ConfigMgr.setDefaultConfigID({0}) failed".format(new_config_id)) from err
+
+        return new_config_id
+
+# -----------------------------------------------------------------------------
+# Database URL parsing
+# -----------------------------------------------------------------------------
+
+
+def translate(mapping, astring):
+    new_string = str(astring)
+    for key, value in mapping.items():
+        new_string = new_string.replace(key, value)
+    return new_string
+
+
+def get_unsafe_characters(astring):
+    result = []
+    for unsafe_character in UNSAFE_CHARACTER_LIST:
+        if unsafe_character in astring:
+            result.append(unsafe_character)
+    return result
+
+
+def get_safe_characters(astring):
+    result = []
+    for safe_character in SAFE_CHARACTER_LIST:
+        if safe_character not in astring:
+            result.append(safe_character)
+    return result
+
+
+def parse_database_url(original_senzing_database_url):
+    ''' Given a canonical database URL, decompose into URL components. '''
+
+    result = {}
+
+    # Get the value of SENZING_DATABASE_URL environment variable.
+
+    senzing_database_url = original_senzing_database_url
+
+    # Create lists of safe and unsafe characters.
+
+    unsafe_characters = get_unsafe_characters(senzing_database_url)
+    safe_characters = get_safe_characters(senzing_database_url)
+
+    # Detect an error condition where there are not enough safe characters.
+
+    if len(unsafe_characters) > len(safe_characters):
+        logging.error(message_error(730, unsafe_characters, safe_characters))
+        return result
+
+    # Perform translation.
+    # This makes a map of safe character mapping to unsafe characters.
+    # "senzing_database_url" is modified to have only safe characters.
+
+    translation_map = {}
+    safe_characters_index = 0
+    for unsafe_character in unsafe_characters:
+        safe_character = safe_characters[safe_characters_index]
+        safe_characters_index += 1
+        translation_map[safe_character] = unsafe_character
+        senzing_database_url = senzing_database_url.replace(unsafe_character, safe_character)
+
+    # Parse "translated" URL.
+
+    parsed = urlparse(senzing_database_url)
+    schema = parsed.path.strip('/')
+
+    # Construct result.
+
+    result = {
+        'scheme': translate(translation_map, parsed.scheme),
+        'netloc': translate(translation_map, parsed.netloc),
+        'path': translate(translation_map, parsed.path),
+        'params': translate(translation_map, parsed.params),
+        'query': translate(translation_map, parsed.query),
+        'fragment': translate(translation_map, parsed.fragment),
+        'username': translate(translation_map, parsed.username),
+        'password': translate(translation_map, parsed.password),
+        'hostname': translate(translation_map, parsed.hostname),
+        'port': translate(translation_map, parsed.port),
+        'schema': translate(translation_map, schema),
+    }
+
+    # For safety, compare original URL with reconstructed URL.
+
+    url_parts = [
+        result.get('scheme'),
+        result.get('netloc'),
+        result.get('path'),
+        result.get('params'),
+        result.get('query'),
+        result.get('fragment'),
+    ]
+    test_senzing_database_url = urlunparse(url_parts)
+    if test_senzing_database_url != original_senzing_database_url:
+        logging.warning(message_warning(568, original_senzing_database_url, test_senzing_database_url))
+
+    # Return result.
+
+    return result
+
+# -----------------------------------------------------------------------------
+# Utility functions
+# -----------------------------------------------------------------------------
+
+
+def create_senzing_database_url(database_url):
+    '''Transform PostgreSQL URL to a format Senzing understands.'''
+    parsed_database_url = parse_database_url(database_url)
+    return "{scheme}://{username}:{password}@{hostname}:{port}:{schema}/".format(**parsed_database_url)
+
+
+def get_db_parameters(database_url):
+    parsed_database_url = parse_database_url(database_url)
+
+    # logging.error(message_error(999, "parsed_database_url: {0}".format(parsed_database_url)))
+    # dbname = parsed_database_url.get('path')[1:]
+    # logging.error(message_error(999, "dbname: {0}".format(dbname)))
+
+    result = {
+        'dbname': parsed_database_url.get('schema', ""),
+        'user': parsed_database_url.get('username', ""),
+        'password':parsed_database_url.get('password', ""),
+        'host':parsed_database_url.get('hostname', ""),
+        "port":parsed_database_url.get('port', ""),
+    }
+    return result
+
+
+def process_sql_file(input_url, db_parameters):
+
+    db_connection = None
+    if input_url:
+        with urllib.request.urlopen(input_url) as input_file:
+            for line in input_file:
+                line_string = line.decode('utf-8').strip()
+                if line_string:
+                    try:
+                        db_connection = psycopg2.connect(**db_parameters)
+                        db_cursor = db_connection.cursor()
+                        db_cursor.execute(line_string)
+                        db_cursor.close()
+                        db_connection.commit()
+                    except (Exception, psycopg2.DatabaseError) as error:
+                        err_message = ' '.join(str(error).split())
+                        logging.error(message_error(999, err_message))
+    if db_connection is not None:
+        db_connection.close()
+
+
+def reverse_replace(a_string, old_value, new_value, occurrence):
+    split_list = a_string.rsplit(old_value, occurrence)
+    return new_value.join(split_list)
+
+# -----------------------------------------------------------------------------
+# Senzing services.
+# -----------------------------------------------------------------------------
+
+
+def get_g2_configuration_dictionary(config):
+    ''' Construct a dictionary in the form of the old ini files. '''
+
+    result = {
+        "PIPELINE": {
+            "CONFIGPATH": config.get("etc_dir"),
+            "RESOURCEPATH": "{0}/resources".format(config.get("g2_dir")),
+            "SUPPORTPATH": config.get("data_dir"),
+        },
+        "SQL": {
+            "CONNECTION": create_senzing_database_url(config.get('database_url')),
+        }
+    }
+    return result
+
+
+def get_g2_configuration_json(config):
+    ''' Return a JSON string with Senzing configuration. '''
+    result = ""
+    if config.get('engine_configuration_json'):
+        result = config.get('engine_configuration_json')
+    else:
+        result = json.dumps(get_g2_configuration_dictionary(config))
+    return result
+
+# -----------------------------------------------------------------------------
+# Senzing services.
+# -----------------------------------------------------------------------------
+
+
+def get_g2_config(config, g2_config_name="init-container-G2-config"):
+    ''' Get the G2Config resource. '''
+    global G2_CONFIG_SINGLETON
+
+    if G2_CONFIG_SINGLETON:
+        return G2_CONFIG_SINGLETON
+
+    try:
+        g2_configuration_json = get_g2_configuration_json(config)
+        result = G2Config()
+        result.init(g2_config_name, g2_configuration_json, config.get('debug'))
+    except G2ModuleException as err:
+        exit_error(897, g2_configuration_json, err)
+
+    G2_CONFIG_SINGLETON = result
+    return result
+
+
+def get_g2_configuration_manager(config, g2_configuration_manager_name="init-container-G2-configuration-manager"):
+    ''' Get the G2ConfigMgr resource. '''
+    global G2_CONFIGURATION_MANAGER_SINGLETON
+
+    if G2_CONFIGURATION_MANAGER_SINGLETON:
+        return G2_CONFIGURATION_MANAGER_SINGLETON
+
+    try:
+        g2_configuration_json = get_g2_configuration_json(config)
+        result = G2ConfigMgr()
+        result.init(g2_configuration_manager_name, g2_configuration_json, config.get('debug'))
+    except G2ModuleException as err:
+        exit_error(896, g2_configuration_json, err)
+
+    G2_CONFIGURATION_MANAGER_SINGLETON = result
+    return result
+
+# -----------------------------------------------------------------------------
+# tasks
+#   Common function signature: task_XXX(config)
+# -----------------------------------------------------------------------------
+
+
+def task_process_sql_file(config):
+
+    input_url = config.get('input_sql_url')
+    db_parameters_list = []
+
+    # If set, include CLI/Environment single database URL.
+
+    database_url = config.get('database_url')
+    if database_url:
+        db_parameters_list.append(database_url)
+
+    # If set, include database URLs listed in SENZING_ENGINE_CONFIGURATION_JSON.
+
+    engine_configuration_json = config.get('engine_configuration_json')
+    if engine_configuration_json:
+        engine_configuration = json.loads(engine_configuration_json)
+
+        db_url_raw = engine_configuration.get('SQL', {}).get('CONNECTION')
+        if db_url_raw:
+            db_parameters_list.append(reverse_replace(db_url_raw, ":", "/", 1))
+
+        cluster_key = engine_configuration.get('SQL', {}).get('BACKEND')
+        if cluster_key:
+            cluster_values = []
+            cluster = engine_configuration.get(cluster_key)
+            for value in cluster.values():
+                cluster_values.append(value)
+            cluster_values_set = set(cluster_values)
+
+            for cluster_value in cluster_values_set:
+                cluster_db_raw = engine_configuration.get(cluster_value, {}).get("DB_1")
+                db_parameters_list.append(reverse_replace(cluster_db_raw, ":", "/", 1))
+
+    # Run the input SQL file against all databases.
+
+    db_parameters_set = set(db_parameters_list)
+    for db_parameters in db_parameters_set:
+        process_sql_file(input_url, get_db_parameters(db_parameters))
+
+
+def task_update_senzing_configuration(config):
+
+    # Get Senzing resources.
+
+    g2_config = get_g2_config(config)
+    g2_configuration_manager = get_g2_configuration_manager(config)
+
+    # Initialize G2 database.
+
+    g2_initializer = G2Initializer(g2_configuration_manager, g2_config)
+    try:
+        default_config_id = g2_initializer.create_default_config_id()
+        if default_config_id:
+            logging.info(message_info(170, default_config_id.decode()))
+    except Exception as err:
+        logging.error(message_error(701, err, type(err.__cause__), err.__cause__))
+
+# -----------------------------------------------------------------------------
 # do_* functions
 #   Common function signature: do_XXX(args)
 # -----------------------------------------------------------------------------
@@ -481,12 +888,13 @@ def do_docker_acceptance_test(subcommand, args):
     logging.info(exit_template(config))
 
 
-def do_task1(subcommand, args):
+def do_mandatory(subcommand, args):
     ''' Do a task. '''
 
     # Get context from CLI, environment variables, and ini files.
 
     config = get_configuration(subcommand, args)
+    validate_configuration(config)
 
     # Prolog.
 
@@ -494,28 +902,8 @@ def do_task1(subcommand, args):
 
     # Do work.
 
-    print("senzing-dir: {senzing_dir}; debug: {debug}".format(**config))
-
-    # Epilog.
-
-    logging.info(exit_template(config))
-
-
-def do_task2(subcommand, args):
-    ''' Do a task. Print the complete config object'''
-
-    # Get context from CLI, environment variables, and ini files.
-
-    config = get_configuration(subcommand, args)
-
-    # Prolog.
-
-    logging.info(entry_template(config))
-
-    # Do work.
-
-    config_json = json.dumps(config, sort_keys=True, indent=4)
-    print(config_json)
+    task_process_sql_file(config)
+    task_update_senzing_configuration(config)
 
     # Epilog.
 

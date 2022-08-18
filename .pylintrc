@@ -2,8 +2,13 @@
 disable=
     broad-except,
     consider-using-f-string,
+    global-statement,
+    import-error,
     line-too-long,
+    missing-function-docstring,
+    too-few-public-methods,
     too-many-branches,
+    too-many-lines,
     too-many-locals,
 good-names=
     init-postgresql

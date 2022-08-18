@@ -83,7 +83,7 @@ The variables are used throughout the installation procedure.
 
 ```console
 export GIT_ACCOUNT=senzing
-export GIT_REPOSITORY=template-python
+export GIT_REPOSITORY=init-postgresql
 ```
 
 Synthesize environment variables.
