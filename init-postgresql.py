@@ -34,7 +34,7 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 # Metadata
 
 __all__ = []
-__version__ = "1.0.1"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.0.2"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
 __updated__ = '2022-08-22'
 
@@ -53,7 +53,7 @@ GIGABYTES = 1024 * MEGABYTES
 
 SAFE_CHARACTER_LIST = ['$', '-', '_', '.', '+', '!', '*', '(', ')', ',', '"'] + list(string.ascii_letters)
 UNSAFE_CHARACTER_LIST = ['"', '<', '>', '#', '%', '{', '}', '|', '\\', '^', '~', '[', ']', '`']
-RESERVED_CHARACTER_LISt = [';', ',', '/', '?', ':', '@', '=', '&']
+RESERVED_CHARACTER_LIST = [';', ',', '/', '?', ':', '@', '=', '&']
 
 # Singletons
 
@@ -587,6 +587,8 @@ class G2Initializer:
 
 
 def translate(mapping, astring):
+    ''' Translate characters. '''
+
     new_string = str(astring)
     for key, value in mapping.items():
         new_string = new_string.replace(key, value)
@@ -594,6 +596,8 @@ def translate(mapping, astring):
 
 
 def get_unsafe_characters(astring):
+    ''' Return the list of unsafe characters found in astring. '''
+
     result = []
     for unsafe_character in UNSAFE_CHARACTER_LIST:
         if unsafe_character in astring:
@@ -602,6 +606,8 @@ def get_unsafe_characters(astring):
 
 
 def get_safe_characters(astring):
+    ''' Return the list of safe characters found in astring. '''
+
     result = []
     for safe_character in SAFE_CHARACTER_LIST:
         if safe_character not in astring:
@@ -692,6 +698,8 @@ def create_senzing_database_url(database_url):
 
 
 def get_db_parameters(database_url):
+    ''' Tokenize a database URL. '''
+
     parsed_database_url = parse_database_url(database_url)
 
     # logging.error(message_error(999, "parsed_database_url: {0}".format(parsed_database_url)))
@@ -709,6 +717,7 @@ def get_db_parameters(database_url):
 
 
 def process_sql_file(input_url, db_parameters):
+    ''' Read an SQL file line-by-line and do a database execute on each line. '''
 
     db_connection = psycopg2.connect(**db_parameters)
     db_connection.autocommit = True
@@ -730,6 +739,8 @@ def process_sql_file(input_url, db_parameters):
 
 
 def reverse_replace(a_string, old_value, new_value, occurrence):
+    ''' Replace the last instance of a character. '''
+
     split_list = a_string.rsplit(old_value, occurrence)
     return new_value.join(split_list)
 
@@ -810,6 +821,7 @@ def get_g2_configuration_manager(config, g2_configuration_manager_name="init-con
 
 
 def task_process_sql_file(config):
+    ''' Process a file of SQL statements. '''
 
     input_url = config.get('input_sql_url')
     db_parameters_list = []
@@ -832,15 +844,18 @@ def task_process_sql_file(config):
 
         cluster_key = engine_configuration.get('SQL', {}).get('BACKEND')
         if cluster_key:
-            cluster_values = []
-            cluster = engine_configuration.get(cluster_key)
-            for value in cluster.values():
-                cluster_values.append(value)
-            cluster_values_set = set(cluster_values)
+            if cluster_key == "SQL":
+                pass  # Special case. Do nothing.
+            else:
+                cluster_values = []
+                cluster = engine_configuration.get(cluster_key)
+                for value in cluster.values():
+                    cluster_values.append(value)
+                cluster_values_set = set(cluster_values)
 
-            for cluster_value in cluster_values_set:
-                cluster_db_raw = engine_configuration.get(cluster_value, {}).get("DB_1")
-                db_parameters_list.append(reverse_replace(cluster_db_raw, ":", "/", 1))
+                for cluster_value in cluster_values_set:
+                    cluster_db_raw = engine_configuration.get(cluster_value, {}).get("DB_1")
+                    db_parameters_list.append(reverse_replace(cluster_db_raw, ":", "/", 1))
 
     # Run the input SQL file against all databases.
 
@@ -850,6 +865,7 @@ def task_process_sql_file(config):
 
 
 def task_update_senzing_configuration(config):
+    ''' Insert Senzing configuration into the database. '''
 
     # Get Senzing resources.
 
