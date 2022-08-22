@@ -34,9 +34,9 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 # Metadata
 
 __all__ = []
-__version__ = "1.0.0"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.0.1"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-08-17'
+__updated__ = '2022-08-22'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -710,18 +710,18 @@ def get_db_parameters(database_url):
 
 def process_sql_file(input_url, db_parameters):
 
-    db_connection = None
+    db_connection = psycopg2.connect(**db_parameters)
+    db_connection.autocommit = True
+
     if input_url:
         with urllib.request.urlopen(input_url) as input_file:
             for line in input_file:
                 line_string = line.decode('utf-8').strip()
                 if line_string:
                     try:
-                        db_connection = psycopg2.connect(**db_parameters)
                         db_cursor = db_connection.cursor()
                         db_cursor.execute(line_string)
                         db_cursor.close()
-                        db_connection.commit()
                     except (Exception, psycopg2.DatabaseError) as error:
                         err_message = ' '.join(str(error).split())
                         logging.error(message_error(999, err_message))
