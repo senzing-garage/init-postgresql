@@ -34,9 +34,9 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 # Metadata
 
 __all__ = []
-__version__ = "1.0.2"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.0.3"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-08-22'
+__updated__ = '2022-08-26'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
