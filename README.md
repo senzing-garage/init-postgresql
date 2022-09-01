@@ -123,7 +123,7 @@ describing where we can improve.   Now on with the show...
     sudo --preserve-env docker run \
       --env SENZING_DATABASE_URL \
       --rm \
-      senzing/init-mysql mandatory
+      senzing/init-postgresql mandatory
     ```
 
 ## Demonstrate using docker-compose
