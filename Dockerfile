@@ -43,9 +43,9 @@ COPY ./init-postgresql.py /app/
 
 # Set environment variables.
 
-ENV LD_LIBRARY_PATH=/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib
+ENV LD_LIBRARY_PATH=/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian
 ENV ODBCSYSINI=/etc/opt/senzing
-ENV PATH=${PATH}:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin
+ENV PATH=${PATH}:/opt/senzing/g2/python
 ENV PYTHONPATH=/opt/senzing/g2/sdk/python
 ENV SENZING_DOCKER_LAUNCHED=true
 ENV SENZING_SUBCOMMAND=all
