@@ -158,7 +158,7 @@ describing where we can improve.   Now on with the show...
     mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR}
     ```
 
-1. Get stable versions of Docker images.
+1. Get versions of Docker images.
    Example:
 
     ```console
