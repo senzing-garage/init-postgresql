@@ -149,14 +149,13 @@ describing where we can improve.   Now on with the show...
     export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin
     export POSTGRES_DIR=${SENZING_VOLUME}/postgres
     export RABBITMQ_DIR=${SENZING_VOLUME}/rabbitmq
-    export SENZING_VAR_DIR=${SENZING_VOLUME}/var
     ```
 
 1. Create directories.
    Example:
 
     ```console
-    mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR} ${SENZING_VAR_DIR}
+    mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR}
     ```
 
 1. Get stable versions of Docker images.
