@@ -20,8 +20,7 @@ $ ./init-postgresql.py
 usage: init-postgres.py [-h]
                         {mandatory,sleep,version,docker-acceptance-test} ...
 
-Add description. For more information, see https://github.com/Senzing/init-
-postgres
+Add description. For more information, see https://github.com/Senzing/init-postgres
 
 positional arguments:
   {mandatory,sleep,version,docker-acceptance-test}
