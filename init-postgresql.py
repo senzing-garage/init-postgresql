@@ -34,9 +34,9 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 # Metadata
 
 __all__ = []
-__version__ = "1.0.3"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.0.4"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-09-01'
+__updated__ = '2022-09-09'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -238,19 +238,8 @@ MESSAGE_DEBUG = 900
 
 MESSAGE_DICTIONARY = {
     "100": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}I",
-    "163": "{0} - Configuring for Senzing database cluster based on SENZING_ENGINE_CONFIGURATION_JSON",
     "170": "Created new default config in SYS_CFG having ID {0}",
     "171": "Default config in SYS_CFG already exists having ID {0}",
-    "180": "{0} - Postgresql detected.  Installing governor from {1}",
-    "181": "{0} - Postgresql detected. Using existing governor; no change.",
-    "182": "Initializing for SQLite",
-    "183": "Initializing for Db2",
-    "184": "Initializing for MS SQL",
-    "185": "Initializing for MySQL",
-    "186": "Initializing for PostgreSQL",
-    "187": "{0} - Directory does not exist; no change.",
-    "188": "{0} - Cannot write to read-only filesystem; no change.",
-    "292": "Configuration change detected.  Old: {0} New: {1}",
     "293": "For information on warnings and errors, see https://github.com/Senzing/stream-loader#errors",
     "294": "Version: {0}  Updated: {1}",
     "295": "Sleeping infinitely.",
@@ -259,20 +248,17 @@ MESSAGE_DICTIONARY = {
     "298": "Exit {0}",
     "299": "{0}",
     "300": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}W",
-    "301": "Could not download the senzing postgresql governor from {0}. Ignore this on air gapped systems. Exception details: {1}",
     "499": "{0}",
     "500": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
-    "510": "{0} - File is missing.",
-    "695": "Unknown database scheme '{0}' in database url '{1}'",
+    "568": "Original and new database URLs do not match. Original URL: {0}; Reconstructed URL: {1}",
     "696": "Bad SENZING_SUBCOMMAND: {0}.",
     "697": "No processing done.",
     "698": "Program terminated with error.",
     "699": "{0}",
     "700": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}E",
     "701": "Missing required parameter: {0}",
-    "879": "Senzing SDK was not imported.",
-    "885": "License has expired.",
-    "891": "Original and new database URLs do not match. Original URL: {0}; Reconstructed URL: {1}",
+    "702": "SQL.execute error: {0}",
+    "730": "There are not enough safe characters to do the translation. Unsafe Characters: {0}; Safe Characters: {1}",
     "896": "Could not initialize G2ConfigMgr with '{0}'. Error: {1}",
     "897": "Could not initialize G2Config with '{0}'. Error: {1}",
     "899": "{0}",
@@ -691,7 +677,7 @@ def parse_database_url(original_senzing_database_url):
 # -----------------------------------------------------------------------------
 
 
-def create_senzing_database_url(database_url):
+def create_senzing_database_connection_string(database_url):
     '''Transform PostgreSQL URL to a format Senzing understands.'''
     parsed_database_url = parse_database_url(database_url)
     return "{scheme}://{username}:{password}@{hostname}:{port}:{schema}/".format(**parsed_database_url)
@@ -701,11 +687,6 @@ def get_db_parameters(database_url):
     ''' Tokenize a database URL. '''
 
     parsed_database_url = parse_database_url(database_url)
-
-    # logging.error(message_error(999, "parsed_database_url: {0}".format(parsed_database_url)))
-    # dbname = parsed_database_url.get('path')[1:]
-    # logging.error(message_error(999, "dbname: {0}".format(dbname)))
-
     result = {
         'dbname': parsed_database_url.get('schema', ""),
         'user': parsed_database_url.get('username', ""),
@@ -733,13 +714,14 @@ def process_sql_file(input_url, db_parameters):
                         db_cursor.close()
                     except (Exception, psycopg2.DatabaseError) as error:
                         err_message = ' '.join(str(error).split())
-                        logging.error(message_error(999, err_message))
+                        logging.error(message_error(702, err_message))
+
     if db_connection is not None:
         db_connection.close()
 
 
-def reverse_replace(a_string, old_value, new_value, occurrence):
-    ''' Replace the last instance of a character. '''
+def create_database_url(a_string, old_value, new_value, occurrence):
+    ''' Replace the last instance of a character to form a proper URL. '''
 
     split_list = a_string.rsplit(old_value, occurrence)
     return new_value.join(split_list)
@@ -759,7 +741,8 @@ def get_g2_configuration_dictionary(config):
             "SUPPORTPATH": config.get("data_dir"),
         },
         "SQL": {
-            "CONNECTION": create_senzing_database_url(config.get('database_url')),
+            "BACKEND": "SQL",
+            "CONNECTION": create_senzing_database_connection_string(config.get('database_url')),
         }
     }
     return result
@@ -840,7 +823,7 @@ def task_process_sql_file(config):
 
         db_url_raw = engine_configuration.get('SQL', {}).get('CONNECTION')
         if db_url_raw:
-            db_parameters_list.append(reverse_replace(db_url_raw, ":", "/", 1))
+            db_parameters_list.append(create_database_url(db_url_raw, ":", "/", 1))
 
         cluster_key = engine_configuration.get('SQL', {}).get('BACKEND')
         if cluster_key:
@@ -855,7 +838,7 @@ def task_process_sql_file(config):
 
                 for cluster_value in cluster_values_set:
                     cluster_db_raw = engine_configuration.get(cluster_value, {}).get("DB_1")
-                    db_parameters_list.append(reverse_replace(cluster_db_raw, ":", "/", 1))
+                    db_parameters_list.append(create_database_url(cluster_db_raw, ":", "/", 1))
 
     # Run the input SQL file against all databases.
 

@@ -97,6 +97,7 @@ describing where we can improve.   Now on with the show...
     export DATABASE_HOST=example.com
     export DATABASE_PORT=5432
     export DATABASE_DATABASE=G2
+
     ```
 
 1. :thinking: **Tip:** Do not set `DATABASE_HOST` to `localhost` nor `127.0.0.1`
@@ -107,6 +108,7 @@ describing where we can improve.   Now on with the show...
 
     ```console
     export DATABASE_HOST=$(curl --silent https://raw.githubusercontent.com/Senzing/knowledge-base/main/gists/find-local-ip-address/find-local-ip-address.py | python3 -)
+
     ```
 
 1. Construct Database URL.
@@ -114,6 +116,7 @@ describing where we can improve.   Now on with the show...
 
     ```console
     export SENZING_DATABASE_URL="${DATABASE_PROTOCOL}://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_DATABASE}"
+
     ```
 
 1. Run Docker container.
@@ -148,14 +151,13 @@ describing where we can improve.   Now on with the show...
     ```console
     export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin
     export POSTGRES_DIR=${SENZING_VOLUME}/postgres
-    export RABBITMQ_DIR=${SENZING_VOLUME}/rabbitmq
     ```
 
 1. Create directories.
    Example:
 
     ```console
-    mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR} ${RABBITMQ_DIR}
+    mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR}
     ```
 
 1. Get versions of Docker images.
@@ -166,6 +168,7 @@ describing where we can improve.   Now on with the show...
         --output ${SENZING_VOLUME}/docker-versions-stable.sh \
         https://raw.githubusercontent.com/Senzing/knowledge-base/main/lists/docker-versions-stable.sh
     source ${SENZING_VOLUME}/docker-versions-stable.sh
+
     ```
 
 1. Download `docker-compose.yaml` and Docker images.
@@ -177,6 +180,7 @@ describing where we can improve.   Now on with the show...
         "https://raw.githubusercontent.com/Senzing/init-mysql/main/docker-compose.yaml"
     cd ${SENZING_VOLUME}
     sudo --preserve-env docker-compose pull
+
     ```
 
 1. Bring up Senzing docker-compose stack.
@@ -185,6 +189,7 @@ describing where we can improve.   Now on with the show...
     ```console
     cd ${SENZING_VOLUME}
     sudo --preserve-env docker-compose up
+
     ```
 
 1. Allow time for the components to be downloaded, start, and initialize.
