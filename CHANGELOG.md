@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [markdownlint](https://dlaa.me/markdownlint/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2022-09-09
+
+### Changed in 1.0.4
+
+- Internal cleanup:
+  - From `apt` to `apt-get`
+  - Remove unnecessary environment variables
+  - Remove unused messages
 
 ## [1.0.3] - 2022-08-25
 
@@ -30,5 +38,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added to 1.0.0
 
 - Initial functionality for "mandatory" subcommand
-    - Create schema
-    - Insert initial Senzing configuration
+  - Create schema
+  - Insert initial Senzing configuration
