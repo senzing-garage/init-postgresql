@@ -21,7 +21,7 @@ import string
 import sys
 import time
 import urllib.request
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, parse_qs
 
 # Import from https://pypi.org/
 
@@ -34,9 +34,9 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 # Metadata
 
 __all__ = []
-__version__ = "1.0.4"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.1.0"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-09-09'
+__updated__ = '2022-09-15'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -687,6 +687,8 @@ def get_db_parameters(database_url):
     ''' Tokenize a database URL. '''
 
     parsed_database_url = parse_database_url(database_url)
+    parsed_query_string = parse_qs(parsed_database_url.get('query', ""))
+
     result = {
         'dbname': parsed_database_url.get('schema', ""),
         'user': parsed_database_url.get('username', ""),
@@ -694,6 +696,10 @@ def get_db_parameters(database_url):
         'host':parsed_database_url.get('hostname', ""),
         "port":parsed_database_url.get('port', ""),
     }
+
+    schema = parsed_query_string.get('schema')[0]
+    if schema:
+        result['options'] = f"-c search_path={schema}"
     return result
 
 
