@@ -700,9 +700,6 @@ def get_db_parameters(database_url):
     schema = parsed_query_string.get('schema')[0]
     if schema:
         result['options'] = f"-c search_path={schema}"
-
-    logging.info(message_info(999, result))
-
     return result
 
 
