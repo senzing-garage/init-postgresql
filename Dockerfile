@@ -1,11 +1,11 @@
 ARG BASE_IMAGE=senzing/senzingapi-runtime:3.2.0
 FROM ${BASE_IMAGE}
 
-ENV REFRESHED_AT=2022-09-09
+ENV REFRESHED_AT=2022-09-15
 
 LABEL Name="senzing/init-postgresql" \
       Maintainer="support@senzing.com" \
-      Version="1.0.4"
+      Version="1.1.0"
 
 # Define health check.
 
