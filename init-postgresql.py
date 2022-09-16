@@ -630,7 +630,7 @@ class G2Initializer:
 
         # Add configuration to G2 database SYS_CFG table.
 
-        new_configuration_comments = "Updated configuration for init-postgresql"
+        new_configuration_comments = "Configuration modified by init-postgresql"
         new_configuration_id_bytearray = bytearray()
         self.g2_configuration_manager.addConfig(new_configuration_json, new_configuration_comments, new_configuration_id_bytearray)
 
