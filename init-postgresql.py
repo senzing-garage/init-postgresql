@@ -246,6 +246,7 @@ MESSAGE_DICTIONARY = {
     "170": "Created new default config in SYS_CFG having ID {0}",
     "171": "Default config in SYS_CFG already exists having ID {0}",
     "172": "Created data source: {0}.  Response: {1}",
+    "173": "Created new config in SYS_CFG having Name: {0} ID: {1}",
     "293": "For information on warnings and errors, see https://github.com/Senzing/stream-loader#errors",
     "294": "Version: {0}  Updated: {1}",
     "295": "Sleeping infinitely.",
@@ -637,6 +638,9 @@ class G2Initializer:
         # Set Default.
 
         self.g2_configuration_manager.setDefaultConfigID(new_configuration_id_bytearray)
+        logging.info(message_info(173, new_configuration_comments, new_configuration_id_bytearray.decode()))
+
+
 
 # -----------------------------------------------------------------------------
 # Database URL parsing
