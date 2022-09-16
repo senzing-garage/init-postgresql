@@ -34,9 +34,9 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 # Metadata
 
 __all__ = []
-__version__ = "1.1.0"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.1.1"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-09-15'
+__updated__ = '2022-09-16'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -64,10 +64,20 @@ G2_CONFIGURATION_MANAGER_SINGLETON = None
 # 1) Command line options, 2) Environment variables, 3) Configuration files, 4) Default values
 
 CONFIGURATION_LOCATOR = {
+    "configuration_modifications": {
+        "default": None,
+        "env": "SENZING_CONFIGURATION_MODIFICATIONS",
+        "cli": "configuration-modifications"
+    },
     "data_dir": {
         "default": "/opt/senzing/data",
         "env": "SENZING_DATA_DIR",
         "cli": "data-dir"
+    },
+    "database_url": {
+        "default": None,
+        "env": "SENZING_DATABASE_URL",
+        "cli": "database-url"
     },
     "debug": {
         "default": False,
@@ -83,11 +93,6 @@ CONFIGURATION_LOCATOR = {
         "default": "/etc/opt/senzing",
         "env": "SENZING_ETC_DIR",
         "cli": "etc-dir"
-    },
-    "database_url": {
-        "default": None,
-        "env": "SENZING_DATABASE_URL",
-        "cli": "database-url"
     },
     "g2_dir": {
         "default": "/opt/senzing/g2",
@@ -240,6 +245,8 @@ MESSAGE_DICTIONARY = {
     "100": "senzing-" + SENZING_PRODUCT_ID + "{0:04d}I",
     "170": "Created new default config in SYS_CFG having ID {0}",
     "171": "Default config in SYS_CFG already exists having ID {0}",
+    "172": "Created data source: {0}.  Response: {1}",
+    "173": "Created new config in SYS_CFG having Name: {0} ID: {1}",
     "293": "For information on warnings and errors, see https://github.com/Senzing/stream-loader#errors",
     "294": "Version: {0}  Updated: {1}",
     "295": "Sleeping infinitely.",
@@ -520,6 +527,9 @@ class G2Initializer:
     def __init__(self, g2_configuration_manager, g2_config):
         self.g2_config = g2_config
         self.g2_configuration_manager = g2_configuration_manager
+        self.senzing_command_functions = {
+            'addDataSource': self.g2_config_add_data_source,
+        }
 
     def create_default_config_id(self):
         ''' Initialize the G2 database. '''
@@ -566,6 +576,69 @@ class G2Initializer:
             raise Exception("G2ConfigMgr.setDefaultConfigID({0}) failed".format(new_config_id)) from err
 
         return new_config_id
+
+    def g2_config_add_data_source(self, config_handle, parameters):
+        ''' Add a DATA_SOURCE. '''
+        data_source_dictionary = {
+            "DSRC_CODE": parameters
+        }
+        data_source_json = json.dumps(data_source_dictionary)
+        response_bytearray = bytearray()
+        self.g2_config.addDataSource(config_handle, data_source_json, response_bytearray)
+        logging.info(message_info(172, parameters, response_bytearray.decode()))
+
+    def process_configuration_line(self, default_configuration_handle, line):
+        ''' Route a single command to the appropriate function. '''
+        line_split = line.split()
+        command = line_split[0]
+        parameters = " ".join(line_split[1:])
+        if command in self.senzing_command_functions.keys():
+            self.senzing_command_functions[command](default_configuration_handle, parameters)
+        else:
+            logging.info(message_info(999, "Bad command: {0}".format(command)))
+
+    def process_configuration_modifications(self, configuration_modifications):
+        ''' Process modifications in a line-break delmited string. '''
+
+        # Get default configuration identifier.
+
+        default_configuration_id_bytearray = bytearray()
+        self.g2_configuration_manager.getDefaultConfigID(default_configuration_id_bytearray)
+
+        # Get default configuration as JSON string.
+
+        default_configuration_id_int = int(default_configuration_id_bytearray)
+        default_configuration_bytearray = bytearray()
+        self.g2_configuration_manager.getConfig(default_configuration_id_int, default_configuration_bytearray)
+        default_configuration_json = default_configuration_bytearray.decode()
+
+        # Create a G2Config object with the default configuration.
+
+        default_configuration_handle = self.g2_config.load(default_configuration_json)
+
+        # Process each directive.
+
+        configuration_modification_list = configuration_modifications.split("\n")
+        for configuration_modification in configuration_modification_list:
+            if len(configuration_modification) > 0:
+                self.process_configuration_line(default_configuration_handle, configuration_modification)
+
+        # Get JSON string with new datasource added.
+
+        new_configration_bytearray = bytearray()
+        self.g2_config.save(default_configuration_handle, new_configration_bytearray)
+        new_configuration_json = new_configration_bytearray.decode()
+
+        # Add configuration to G2 database SYS_CFG table.
+
+        new_configuration_comments = "Configuration modified by init-postgresql"
+        new_configuration_id_bytearray = bytearray()
+        self.g2_configuration_manager.addConfig(new_configuration_json, new_configuration_comments, new_configuration_id_bytearray)
+
+        # Set Default.
+
+        self.g2_configuration_manager.setDefaultConfigID(new_configuration_id_bytearray)
+        logging.info(message_info(173, new_configuration_comments, new_configuration_id_bytearray.decode()))
 
 # -----------------------------------------------------------------------------
 # Database URL parsing
@@ -697,9 +770,10 @@ def get_db_parameters(database_url):
         "port":parsed_database_url.get('port', ""),
     }
 
-    schema = parsed_query_string.get('schema')[0]
-    if schema:
-        result['options'] = f"-c search_path={schema}"
+    if parsed_query_string.get('schema'):
+        schema = parsed_query_string.get('schema')[0]
+        if schema:
+            result['options'] = f"-c search_path={schema}"
     return result
 
 
@@ -809,6 +883,28 @@ def get_g2_configuration_manager(config, g2_configuration_manager_name="init-con
 # -----------------------------------------------------------------------------
 
 
+def task_modify_senzing_configuration(config):
+    ''' Insert Senzing configuration into the database. '''
+
+    configuration_modifications = config.get('configuration_modifications')
+
+    if configuration_modifications is None:
+        return
+
+    # Get Senzing resources.
+
+    g2_config = get_g2_config(config)
+    g2_configuration_manager = get_g2_configuration_manager(config)
+
+    # Modify G2 configuration.
+
+    g2_initializer = G2Initializer(g2_configuration_manager, g2_config)
+    try:
+        g2_initializer.process_configuration_modifications(configuration_modifications)
+    except Exception as err:
+        logging.error(message_error(701, err, type(err.__cause__), err.__cause__))
+
+
 def task_process_sql_file(config):
     ''' Process a file of SQL statements. '''
 
@@ -909,6 +1005,7 @@ def do_mandatory(subcommand, args):
 
     task_process_sql_file(config)
     task_update_senzing_configuration(config)
+    task_modify_senzing_configuration(config)
 
     # Epilog.
 
