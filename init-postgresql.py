@@ -891,12 +891,9 @@ def task_modify_senzing_configuration(config):
     g2_config = get_g2_config(config)
     g2_configuration_manager = get_g2_configuration_manager(config)
 
-    # Initialize G2 database.
+    # Modify G2 configuration.
 
     g2_initializer = G2Initializer(g2_configuration_manager, g2_config)
-
-    g2_initializer.process_configuration_modifications(configuration_modifications)
-
     try:
         g2_initializer.process_configuration_modifications(configuration_modifications)
     except Exception as err:
