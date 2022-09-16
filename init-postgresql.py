@@ -890,6 +890,9 @@ def task_modify_senzing_configuration(config):
 
     configuration_modifications = config.get('configuration_modifications')
 
+    if configuration_modifications is None:
+        return
+
     # Get Senzing resources.
 
     g2_config = get_g2_config(config)
