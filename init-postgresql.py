@@ -640,8 +640,6 @@ class G2Initializer:
         self.g2_configuration_manager.setDefaultConfigID(new_configuration_id_bytearray)
         logging.info(message_info(173, new_configuration_comments, new_configuration_id_bytearray.decode()))
 
-
-
 # -----------------------------------------------------------------------------
 # Database URL parsing
 # -----------------------------------------------------------------------------
