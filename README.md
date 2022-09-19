@@ -127,6 +127,7 @@ describing where we can improve.   Now on with the show...
       --env SENZING_DATABASE_URL \
       --rm \
       senzing/init-postgresql mandatory
+
     ```
 
 ## Demonstrate using docker-compose
@@ -136,6 +137,7 @@ describing where we can improve.   Now on with the show...
 
     ```console
     export SENZING_VOLUME=~/my-senzing
+
     ```
 
     1. :warning:
@@ -151,6 +153,7 @@ describing where we can improve.   Now on with the show...
     ```console
     export PGADMIN_DIR=${SENZING_VOLUME}/pgadmin
     export POSTGRES_DIR=${SENZING_VOLUME}/postgres
+
     ```
 
 1. Create directories.
@@ -158,6 +161,7 @@ describing where we can improve.   Now on with the show...
 
     ```console
     mkdir -p ${PGADMIN_DIR} ${POSTGRES_DIR}
+
     ```
 
 1. Get versions of Docker images.
@@ -177,7 +181,7 @@ describing where we can improve.   Now on with the show...
     ```console
     curl -X GET \
         --output ${SENZING_VOLUME}/docker-compose.yaml \
-        "https://raw.githubusercontent.com/Senzing/init-mysql/main/docker-compose.yaml"
+        "https://raw.githubusercontent.com/Senzing/init-postgresql/main/docker-compose.yaml"
     cd ${SENZING_VOLUME}
     sudo --preserve-env docker-compose pull
 
