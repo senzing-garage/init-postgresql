@@ -177,7 +177,7 @@ describing where we can improve.   Now on with the show...
     ```console
     curl -X GET \
         --output ${SENZING_VOLUME}/docker-compose.yaml \
-        "https://raw.githubusercontent.com/Senzing/init-mysql/main/docker-compose.yaml"
+        "https://raw.githubusercontent.com/Senzing/init-postgresql/main/docker-compose.yaml"
     cd ${SENZING_VOLUME}
     sudo --preserve-env docker-compose pull
 
