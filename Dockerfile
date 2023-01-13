@@ -1,11 +1,11 @@
 ARG BASE_IMAGE=senzing/senzingapi-runtime:3.4.0
 FROM ${BASE_IMAGE}
 
-ENV REFRESHED_AT=2023-01-12
+ENV REFRESHED_AT=2023-01-13
 
 LABEL Name="senzing/init-postgresql" \
       Maintainer="support@senzing.com" \
-      Version="1.1.5"
+      Version="1.1.6"
 
 # Define health check.
 
@@ -25,7 +25,6 @@ RUN apt-get update \
       odbc-postgresql \
       python3 \
       python3-pip \
-      software-properties-common \
       wget \
  && rm -rf /var/lib/apt/lists/*
 
