@@ -34,9 +34,9 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 # Metadata
 
 __all__ = []
-__version__ = "1.1.4"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.1.7"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-10-31'
+__updated__ = '2023-02-09'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -758,10 +758,7 @@ def create_senzing_database_connection_string(database_url):
 
 def get_db_parameters(database_url):
     ''' Tokenize a database URL. '''
-
     parsed_database_url = parse_database_url(database_url)
-    parsed_query_string = parse_qs(parsed_database_url.get('query', ""))
-
     result = {
         'dbname': parsed_database_url.get('schema', ""),
         'user': parsed_database_url.get('username', ""),
@@ -769,11 +766,9 @@ def get_db_parameters(database_url):
         'host':parsed_database_url.get('hostname', ""),
         "port":parsed_database_url.get('port', ""),
     }
-
-    if parsed_query_string.get('schema'):
-        schema = parsed_query_string.get('schema')[0]
-        if schema:
-            result['options'] = f"-c search_path={schema}"
+    schema = parse_qs(parsed_database_url.query).get('schema')
+    if schema:
+        result['options'] = "-c search_path={0}".format(schema[0])
     return result
 
 
