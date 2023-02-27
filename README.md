@@ -17,14 +17,13 @@ To see all of the subcommands, run:
 
 ```console
 $ ./init-postgresql.py
-usage: init-postgres.py [-h]
-                        {mandatory,sleep,version,docker-acceptance-test} ...
+usage: init-postgres.py [-h] {mandatory,sleep,version,docker-acceptance-test} ...
 
 Add description. For more information, see https://github.com/Senzing/init-postgres
 
 positional arguments:
   {mandatory,sleep,version,docker-acceptance-test}
-                        Subcommands (SENZING_SUBCOMMAND):
+                        Subcommands [SENZING_SUBCOMMAND]:
     mandatory           Perform mandatory initialization tasks.
     sleep               Do nothing but sleep. For Docker testing.
     version             Print version of program.
