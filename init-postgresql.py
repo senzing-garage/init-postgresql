@@ -36,7 +36,7 @@ from senzing import G2Config, G2ConfigMgr, G2ModuleException
 __all__ = []
 __version__ = "1.1.4"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
-__updated__ = '2022-10-31'
+__updated__ = '2023-02-27'
 
 # See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -214,7 +214,7 @@ def get_parser():
                     subcommand_value['arguments'][argument] = argument_value
 
     parser = argparse.ArgumentParser(prog="init-postgres.py", description="Add description. For more information, see https://github.com/Senzing/init-postgres")
-    subparsers = parser.add_subparsers(dest='subcommand', help='Subcommands (SENZING_SUBCOMMAND):')
+    subparsers = parser.add_subparsers(dest='subcommand', help='Subcommands [SENZING_SUBCOMMAND]:')
 
     for subcommand_key, subcommand_values in subcommands.items():
         subcommand_help = subcommand_values.get('help', "")

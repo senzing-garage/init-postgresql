@@ -130,6 +130,18 @@ describing where we can improve.   Now on with the show...
 
     ```
 
+1. *Alternative:* Run Docker container.
+   Example:
+
+    ```console
+    sudo --preserve-env docker run \
+      --env SENZING_DATABASE_URL \
+      --env SENZING_SUBCOMMAND=mandatory \
+      --rm \
+      senzing/init-postgresql
+
+    ```
+
 ## Demonstrate using docker-compose
 
 1. :pencil2: Specify a new directory to hold demonstration artifacts on the local host.
@@ -260,9 +272,12 @@ see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/
 
 Configuration values specified by environment variable or command line parameter.
 
+- **[SENZING_CONFIGURATION_MODIFICATIONS](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_configuration_modifications)**
 - **[SENZING_DATABASE_URL](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_database_url)**
 - **[SENZING_DEBUG](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_debug)**
-- **[SENZING_ENGINE_CONFIGURATION_JSON](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_engine-configuration_json)**
+- **[SENZING_ENGINE_CONFIGURATION_JSON](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_engine_configuration_json)**
+- **[SENZING_INPUT_SQL_URL](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_input_sql_url)**
+- **[SENZING_SUBCOMMAND](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_subcommand)**
 
 ## Errors
 
