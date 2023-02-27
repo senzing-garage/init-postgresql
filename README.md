@@ -17,14 +17,13 @@ To see all of the subcommands, run:
 
 ```console
 $ ./init-postgresql.py
-usage: init-postgres.py [-h]
-                        {mandatory,sleep,version,docker-acceptance-test} ...
+usage: init-postgres.py [-h] {mandatory,sleep,version,docker-acceptance-test} ...
 
 Add description. For more information, see https://github.com/Senzing/init-postgres
 
 positional arguments:
   {mandatory,sleep,version,docker-acceptance-test}
-                        Subcommands (SENZING_SUBCOMMAND):
+                        Subcommands [SENZING_SUBCOMMAND]:
     mandatory           Perform mandatory initialization tasks.
     sleep               Do nothing but sleep. For Docker testing.
     version             Print version of program.
@@ -127,6 +126,18 @@ describing where we can improve.   Now on with the show...
       --env SENZING_DATABASE_URL \
       --rm \
       senzing/init-postgresql mandatory
+
+    ```
+
+1. *Alternative:* Run Docker container.
+   Example:
+
+    ```console
+    sudo --preserve-env docker run \
+      --env SENZING_DATABASE_URL \
+      --env SENZING_SUBCOMMAND=mandatory \
+      --rm \
+      senzing/init-postgresql
 
     ```
 
@@ -260,9 +271,12 @@ see [Environment Variables](https://github.com/Senzing/knowledge-base/blob/main/
 
 Configuration values specified by environment variable or command line parameter.
 
+- **[SENZING_CONFIGURATION_MODIFICATIONS](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_configuration_modifications)**
 - **[SENZING_DATABASE_URL](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_database_url)**
 - **[SENZING_DEBUG](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_debug)**
-- **[SENZING_ENGINE_CONFIGURATION_JSON](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_engine-configuration_json)**
+- **[SENZING_ENGINE_CONFIGURATION_JSON](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_engine_configuration_json)**
+- **[SENZING_INPUT_SQL_URL](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_input_sql_url)**
+- **[SENZING_SUBCOMMAND](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_subcommand)**
 
 ## Errors
 

@@ -1,6 +1,7 @@
 [pylint]
 disable=
     broad-except,
+    broad-exception-raised,
     consider-iterating-dictionary,
     consider-using-f-string,
     global-statement,
