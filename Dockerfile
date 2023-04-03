@@ -1,7 +1,7 @@
-ARG BASE_IMAGE=senzing/senzingapi-runtime:3.4.0
+ARG BASE_IMAGE=senzing/senzingapi-runtime:3.5.0
 FROM ${BASE_IMAGE}
 
-ENV REFRESHED_AT=2023-03-01
+ENV REFRESHED_AT=2023-04-03
 
 LABEL Name="senzing/init-postgresql" \
       Maintainer="support@senzing.com" \
