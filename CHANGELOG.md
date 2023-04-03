@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed in 1.1.8
 
-- In `Dockerfile`, updated FROM instruction to `senzing/senzingapi-tools:3.5.0`
+- In `Dockerfile`, updated FROM instruction to `senzing/senzingapi-runtime:3.5.0`
 - In `requirements.txt`, updated:
   - psycopg2-binary==2.9.6
 
