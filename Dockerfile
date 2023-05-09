@@ -5,7 +5,7 @@ ENV REFRESHED_AT=2023-05-09
 
 LABEL Name="senzing/init-postgresql" \
       Maintainer="support@senzing.com" \
-      Version="1.1.8"
+      Version="1.1.9"
 
 # Define health check.
 
