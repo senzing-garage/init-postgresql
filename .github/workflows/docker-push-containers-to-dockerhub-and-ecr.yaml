@@ -1,6 +1,6 @@
 ---
 
-  name: docker-push-containers-to-dockerhub.yaml
+  name: docker-push-containers-to-dockerhub-and-ecr.yaml
   
   on:
     push:
