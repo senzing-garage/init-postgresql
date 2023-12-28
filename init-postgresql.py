@@ -38,7 +38,7 @@ __version__ = "1.1.12"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = '2022-08-04'
 __updated__ = '2023-09-30'
 
-# See https://github.com/Senzing/knowledge-base/blob/main/lists/senzing-product-ids.md
+# See https://github.com/senzing-garage/knowledge-base/blob/main/lists/senzing-product-ids.md
 
 SENZING_PRODUCT_ID = "5030"
 LOG_FORMAT = '%(asctime)s %(message)s'
@@ -213,7 +213,7 @@ def get_parser():
                 for argument, argument_value in arguments.items():
                     subcommand_value['arguments'][argument] = argument_value
 
-    parser = argparse.ArgumentParser(prog="init-postgres.py", description="Create Senzing schema and configuration in a PostgreSql database. For more information, see https://github.com/Senzing/init-postgresql")
+    parser = argparse.ArgumentParser(prog="init-postgres.py", description="Create Senzing schema and configuration in a PostgreSql database. For more information, see https://github.com/senzing-garage/init-postgresql")
     subparsers = parser.add_subparsers(dest='subcommand', help='Subcommands [SENZING_SUBCOMMAND]:')
 
     for subcommand_key, subcommand_values in subcommands.items():
@@ -247,7 +247,7 @@ MESSAGE_DICTIONARY = {
     "171": "Default config in SYS_CFG already exists having ID {0}",
     "172": "Created data source: {0}.  Response: {1}",
     "173": "Created new config in SYS_CFG having Name: {0} ID: {1}",
-    "293": "For information on warnings and errors, see https://github.com/Senzing/init-postgresql#errors",
+    "293": "For information on warnings and errors, see https://github.com/senzing-garage/init-postgresql#errors",
     "294": "Version: {0}  Updated: {1}",
     "295": "Sleeping infinitely.",
     "296": "Sleeping {0} seconds.",

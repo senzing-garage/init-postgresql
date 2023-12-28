@@ -1,5 +1,17 @@
 # init-postgresql
 
+If you are beginning your journey with
+[Senzing](https://senzing.com/),
+please start with
+[Senzing Quick Start guides](https://docs.senzing.com/quickstart/).
+
+You are in the
+[Senzing Garage](https://github.com/senzing-garage)
+where projects are "tinkered" on.
+Although this GitHub repository may help you understand an approach to using Senzing,
+it's not considered to be "production ready" and is not considered to be part of the Senzing product.
+Heck, it may not even be appropriate for your application of Senzing!
+
 ## Synopsis
 
 Initializes a PostgreSQL database for use with Senzing.
@@ -19,7 +31,7 @@ To see all of the subcommands, run:
 $ ./init-postgresql.py
 usage: init-postgres.py [-h] {mandatory,sleep,version,docker-acceptance-test} ...
 
-Add description. For more information, see https://github.com/Senzing/init-postgres
+Add description. For more information, see https://github.com/senzing-garage/init-postgres
 
 positional arguments:
   {mandatory,sleep,version,docker-acceptance-test}
@@ -49,12 +61,12 @@ optional arguments:
 
 At [Senzing](http://senzing.com),
 we strive to create GitHub documentation in a
-"[don't make me think](https://github.com/Senzing/knowledge-base/blob/main/WHATIS/dont-make-me-think.md)" style.
+"[don't make me think](https://github.com/senzing-garage/knowledge-base/blob/main/WHATIS/dont-make-me-think.md)" style.
 For the most part, instructions are copy and paste.
 Whenever thinking is needed, it's marked with a "thinking" icon :thinking:.
 Whenever customization is needed, it's marked with a "pencil" icon :pencil2:.
 If the instructions are not clear, please let us know by opening a new
-[Documentation issue](https://github.com/Senzing/init-postgresql/issues/new?template=documentation_request.md)
+[Documentation issue](https://github.com/senzing-garage/init-postgresql/issues/new?template=documentation_request.md)
 describing where we can improve.   Now on with the show...
 
 ### Legend
@@ -65,12 +77,12 @@ describing where we can improve.   Now on with the show...
 1. :pencil2: - A "pencil" icon means that the instructions may need modification before performing.
 1. :warning: - A "warning" icon means that something tricky is happening, so pay attention.
 
-## Expectations
+### Expectations
 
 - **Space:** This repository and demonstration require 6 GB free disk space.
 - **Time:** Budget 15 minutes to get the demonstration up-and-running, depending on CPU and network speeds.
 - **Background knowledge:** This repository assumes a working knowledge of:
-  - [Docker](https://github.com/Senzing/knowledge-base/blob/main/WHATIS/docker.md)
+  - [Docker](https://github.com/senzing-garage/knowledge-base/blob/main/WHATIS/docker.md)
 
 ## Demonstrate using Docker
 
@@ -140,10 +152,10 @@ describing where we can improve.   Now on with the show...
     ```
 
     1. :warning:
-       **macOS** - [File sharing](https://github.com/Senzing/knowledge-base/blob/main/HOWTO/share-directories-with-docker.md#macos)
+       **macOS** - [File sharing](https://github.com/senzing-garage/knowledge-base/blob/main/HOWTO/share-directories-with-docker.md#macos)
        must be enabled for `SENZING_VOLUME`.
     1. :warning:
-       **Windows** - [File sharing](https://github.com/Senzing/knowledge-base/blob/main/HOWTO/share-directories-with-docker.md#windows)
+       **Windows** - [File sharing](https://github.com/senzing-garage/knowledge-base/blob/main/HOWTO/share-directories-with-docker.md#windows)
        must be enabled for `SENZING_VOLUME`.
 
 1. Set environment variables.
@@ -203,12 +215,12 @@ describing where we can improve.   Now on with the show...
 
 Configuration values specified by environment variable or command line parameter.
 
-- **[SENZING_CONFIGURATION_MODIFICATIONS](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_configuration_modifications)**
-- **[SENZING_DATABASE_URL](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_database_url)**
-- **[SENZING_DEBUG](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_debug)**
-- **[SENZING_ENGINE_CONFIGURATION_JSON](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_engine_configuration_json)**
-- **[SENZING_INPUT_SQL_URL](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_input_sql_url)**
-- **[SENZING_SUBCOMMAND](https://github.com/Senzing/knowledge-base/blob/main/lists/environment-variables.md#senzing_subcommand)**
+- **[SENZING_CONFIGURATION_MODIFICATIONS](https://github.com/senzing-garage/knowledge-base/blob/main/lists/environment-variables.md#senzing_configuration_modifications)**
+- **[SENZING_DATABASE_URL](https://github.com/senzing-garage/knowledge-base/blob/main/lists/environment-variables.md#senzing_database_url)**
+- **[SENZING_DEBUG](https://github.com/senzing-garage/knowledge-base/blob/main/lists/environment-variables.md#senzing_debug)**
+- **[SENZING_ENGINE_CONFIGURATION_JSON](https://github.com/senzing-garage/knowledge-base/blob/main/lists/environment-variables.md#senzing_engine_configuration_json)**
+- **[SENZING_INPUT_SQL_URL](https://github.com/senzing-garage/knowledge-base/blob/main/lists/environment-variables.md#senzing_input_sql_url)**
+- **[SENZING_SUBCOMMAND](https://github.com/senzing-garage/knowledge-base/blob/main/lists/environment-variables.md#senzing_subcommand)**
 
 ## License
 
@@ -218,7 +230,7 @@ for the software container in this Docker image.
 Note that this license does not permit further distribution.
 
 This Docker image may also contain software from the
-[Senzing GitHub community](https://github.com/Senzing/)
+[Senzing GitHub community](https://github.com/senzing-garage/)
 under the
 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
@@ -238,4 +250,4 @@ with any relevant licenses for all software contained within.
 1. [Examples](docs/examples.md)
 1. Related artifacts:
     1. [DockerHub](https://hub.docker.com/r/senzing/init-postgresql)
-    1. [Helm Chart](https://github.com/Senzing/charts/tree/main/charts/senzing-init-postgresql)
+    1. [Helm Chart](https://github.com/senzing-garage/charts/tree/main/charts/senzing-init-postgresql)
