@@ -4,8 +4,8 @@ FROM ${BASE_IMAGE}
 ENV REFRESHED_AT=2024-03-18
 
 LABEL Name="senzing/init-postgresql" \
-      Maintainer="support@senzing.com" \
-      Version="1.1.13"
+  Maintainer="support@senzing.com" \
+  Version="1.1.14"
 
 # Define health check.
 
@@ -18,22 +18,22 @@ USER root
 # Install packages via apt.
 
 RUN apt-get update \
- && apt-get -y install \
-      gnupg2 \
-      libaio1 \
-      libodbc1 \
-      odbc-postgresql \
-      python3 \
-      python3-pip \
-      wget \
- && rm -rf /var/lib/apt/lists/*
+  && apt-get -y install \
+  gnupg2 \
+  libaio1 \
+  libodbc1 \
+  odbc-postgresql \
+  python3 \
+  python3-pip \
+  wget \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install packages via PIP.
 
 COPY requirements.txt .
 RUN pip3 install --upgrade pip \
- && pip3 install -r requirements.txt \
- && rm /requirements.txt
+  && pip3 install -r requirements.txt \
+  && rm /requirements.txt
 
 # Copy files from repository.
 
