@@ -5,11 +5,12 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
 
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
 jobs:
   docker-push-containers-to-dockerhub-and-ecr:
-    permissions:
-      id-token: write   # This is required for requesting the JWT
-      contents: read    # This is required for actions/checkout
     secrets:
       AWS_DOCKER_ACCOUNT_ID: ${{ secrets.AWS_DOCKER_ACCOUNT_ID }}
       DOCKERHUB_ACCESS_TOKEN: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
