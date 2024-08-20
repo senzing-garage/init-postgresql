@@ -708,7 +708,8 @@ class G2Initializer:
 
 
 # TODO
-def translate(mapping, astring):
+# def translate(mapping, astring):
+def translate(astring):
     """Translate characters."""
 
     # new_string = str(astring)
@@ -763,8 +764,8 @@ def parse_database_url(original_senzing_database_url):
     # "senzing_database_url" is modified to have only safe characters.
 
     translation_map = {}
-    safe_characters_index = 0
     # TODO
+    # safe_characters_index = 0
     # for unsafe_character in unsafe_characters:
     #     safe_character = safe_characters[safe_characters_index]
     #     safe_characters_index += 1
