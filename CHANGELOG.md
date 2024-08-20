@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 [markdownlint](https://dlaa.me/markdownlint/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.17] - 2024-08-20
+
+### Changed in 1.1.17
+
+- Improved parsing on engine settings CONNECTION string where host portion has @ in it
+
 ## [1.1.16] - 2024-06-24
 
 ### Changed in 1.1.16

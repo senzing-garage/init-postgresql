@@ -9,6 +9,7 @@ disable=
     line-too-long,
     too-few-public-methods,
     too-many-branches,
+    too-many-function-args,
     too-many-lines,
     too-many-locals,
 good-names=
