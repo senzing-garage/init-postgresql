@@ -1,11 +1,11 @@
-ARG BASE_IMAGE=senzing/senzingapi-runtime:3.10.3
+ARG BASE_IMAGE=senzing/senzingapi-runtime:3.12.5
 FROM ${BASE_IMAGE}
 
-ENV REFRESHED_AT=2024-06-24
+ENV REFRESHED_AT=2025-02-05
 
 LABEL Name="senzing/init-postgresql" \
-  Maintainer="support@senzing.com" \
-  Version="1.1.16"
+      Maintainer="support@senzing.com" \
+      Version="1.1.17"
 
 # Define health check.
 
@@ -18,22 +18,22 @@ USER root
 # Install packages via apt.
 
 RUN apt-get update \
-  && apt-get -y install \
-  gnupg2 \
-  libaio1 \
-  libodbc1 \
-  odbc-postgresql \
-  python3 \
-  python3-pip \
-  wget \
-  && rm -rf /var/lib/apt/lists/*
+ && apt-get -y install \
+      gnupg2 \
+      libaio1 \
+      libodbc1 \
+      odbc-postgresql \
+      python3 \
+      python3-pip \
+      wget \
+ && rm -rf /var/lib/apt/lists/*
 
 # Install packages via PIP.
 
 COPY requirements.txt .
 RUN pip3 install --upgrade pip \
-  && pip3 install -r requirements.txt \
-  && rm /requirements.txt
+ && pip3 install -r requirements.txt \
+ && rm /requirements.txt
 
 # Copy files from repository.
 
