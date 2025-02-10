@@ -21,26 +21,16 @@ import string
 import sys
 import time
 import urllib.request
-
-# TODO
 from urllib.parse import parse_qs, unquote, urlparse, urlunparse
 
 import psycopg2
-
-from senzing import G2Config, G2ConfigMgr, G2ModuleException
-
-# Import from https://pypi.org/
-
-
-# Import from Senzing.
-
+from senzing import G2Config, G2ConfigMgr, G2Exception
 
 # Metadata
 
-__all__ = []
-__version__ = "1.1.12"  # See https://www.python.org/dev/peps/pep-0396/
+__version__ = "1.1.18"  # See https://www.python.org/dev/peps/pep-0396/
 __date__ = "2022-08-04"
-__updated__ = "2024-08-20"
+__updated__ = "2025-02-10"
 
 # See https://github.com/senzing-garage/knowledge-base/blob/main/lists/senzing-product-ids.md
 
@@ -589,7 +579,7 @@ class G2Initializer:
             self.g2_config.save(config_handle, configuration_bytearray)
         except Exception as err:
             raise Exception(
-                "G2Confg.save({0}, {1}) failed".format(
+                "G2Config.save({0}, {1}) failed".format(
                     config_handle, configuration_bytearray
                 )
             ) from err
@@ -645,7 +635,7 @@ class G2Initializer:
             logging.info(message_info(999, "Bad command: {0}".format(command)))
 
     def process_configuration_modifications(self, configuration_modifications):
-        """Process modifications in a line-break delmited string."""
+        """Process modifications in a line-break delimited string."""
 
         # Get default configuration identifier.
 
@@ -678,9 +668,9 @@ class G2Initializer:
 
         # Get JSON string with new datasource added.
 
-        new_configration_bytearray = bytearray()
-        self.g2_config.save(default_configuration_handle, new_configration_bytearray)
-        new_configuration_json = new_configration_bytearray.decode()
+        new_configuration_bytearray = bytearray()
+        self.g2_config.save(default_configuration_handle, new_configuration_bytearray)
+        new_configuration_json = new_configuration_bytearray.decode()
 
         # Add configuration to G2 database SYS_CFG table.
 
@@ -707,34 +697,33 @@ class G2Initializer:
 # -----------------------------------------------------------------------------
 
 
-# TODO
-# def translate(mapping, astring):
-def translate(astring):
+def translate(mapping, a_string):  # pylint: disable=unused-argument
     """Translate characters."""
 
-    # new_string = str(astring)
+    # NOTE Removed, was causing errors when symbols such as @ are in a user or password
+    # new_string = str(a_string)
     # for key, value in mapping.items():
     #     new_string = new_string.replace(key, value)
     # return new_string
-    return unquote(astring)
+    return unquote(a_string)
 
 
-def get_unsafe_characters(astring):
-    """Return the list of unsafe characters found in astring."""
+def get_unsafe_characters(a_string):
+    """Return the list of unsafe characters found in a_string."""
 
     result = []
     for unsafe_character in UNSAFE_CHARACTER_LIST:
-        if unsafe_character in astring:
+        if unsafe_character in a_string:
             result.append(unsafe_character)
     return result
 
 
-def get_safe_characters(astring):
-    """Return the list of safe characters found in astring."""
+def get_safe_characters(a_string):
+    """Return the list of safe characters found in a_string."""
 
     result = []
     for safe_character in SAFE_CHARACTER_LIST:
-        if safe_character not in astring:
+        if safe_character not in a_string:
             result.append(safe_character)
     return result
 
@@ -764,7 +753,7 @@ def parse_database_url(original_senzing_database_url):
     # "senzing_database_url" is modified to have only safe characters.
 
     translation_map = {}
-    # TODO
+    # NOTE Removed, was causing errors when symbols such as @ are in a user or password
     # safe_characters_index = 0
     # for unsafe_character in unsafe_characters:
     #     safe_character = safe_characters[safe_characters_index]
@@ -791,7 +780,6 @@ def parse_database_url(original_senzing_database_url):
         "username": translate(translation_map, parsed.username),
         "password": translate(translation_map, parsed.password),
         "hostname": translate(translation_map, parsed.hostname),
-        # TODO
         # 'port': translate(translation_map, parsed.port),
         "port": parsed.port,
         "schema": translate(translation_map, schema),
@@ -934,7 +922,7 @@ def get_g2_config(config, g2_config_name="init-container-G2-config"):
         g2_configuration_json = get_g2_configuration_json(config)
         result = G2Config()
         result.init(g2_config_name, g2_configuration_json, config.get("debug"))
-    except G2ModuleException as err:
+    except G2Exception as err:
         exit_error(897, g2_configuration_json, err)
 
     G2_CONFIG_SINGLETON = result
@@ -956,7 +944,7 @@ def get_g2_configuration_manager(
         result.init(
             g2_configuration_manager_name, g2_configuration_json, config.get("debug")
         )
-    except G2ModuleException as err:
+    except G2Exception as err:
         exit_error(896, g2_configuration_json, err)
 
     G2_CONFIGURATION_MANAGER_SINGLETON = result
@@ -1173,7 +1161,7 @@ if __name__ == "__main__":
 
     # Parse the command line arguments.
 
-    SUBCOMMAND = os.getenv("SENZING_SUBCOMMAND", None)
+    SUBCOMMAND = os.getenv("SENZING_SUBCOMMAND", "")
     PARSER = get_parser()
     if len(sys.argv) > 1:
         ARGS = PARSER.parse_args()
