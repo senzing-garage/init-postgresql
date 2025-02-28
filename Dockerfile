@@ -25,6 +25,7 @@ RUN apt-get update \
   odbc-postgresql \
   python3 \
   python3-pip \
+  python3-venv \
   wget \
   && rm -rf /var/lib/apt/lists/*
 
